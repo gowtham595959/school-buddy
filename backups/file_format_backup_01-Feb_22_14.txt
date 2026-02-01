@@ -1,0 +1,4336 @@
+########## FILE TREE ##########
+README.md
+.vscode/settings.json
+server/package.json
+server/src/db/pool.js
+server/src/db.js
+server/src/index.js
+server/src/routes/user.js
+server/src/routes/geocode.js
+server/src/routes/_deprecated/tiffin.js
+server/src/routes/_deprecated/tiffinIndividuals.js
+server/src/routes/_deprecated/styles.js
+server/src/routes/catchment/geometry.js
+server/src/routes/catchment/eligibility.js
+server/src/routes/catchment/index.js
+server/src/routes/catchment/eligibility.route.js
+server/src/routes/catchmentCheck.js
+server/src/routes/schools.js
+server/src/routes/transport.js
+server/src/routes/health.js
+server/src/routes/catchments.js
+server/src/domains/schools/schools.service.js
+server/src/domains/catchment/catchment.eligibility.service.js
+server/src/domains/catchment/catchment.service.js
+server/src/domains/catchment/catchment.types.js
+server/src/domains/catchment/catchment.resolver.js
+server/src/domains/catchment/eligibility.route.js
+server/src/domains/catchment/catchment.styles.service.js
+server/src/domains/geocode/geocode.service.js
+client/package.json
+client/src/api.js
+client/src/MapView.jsx
+client/src/components/CatchmentResultsList.jsx
+client/src/components/MarkerLayer.jsx
+client/src/components/PanToHome.jsx
+client/src/components/HomePostcodeInput.jsx
+client/src/components/map/MapCanvas.jsx
+client/src/components/RadiusLayer.jsx
+client/src/components/transport/TransportPanel.jsx
+client/src/components/transport/transportApi.js
+client/src/components/transport/TransportRouteLayer.jsx
+client/src/components/transport/TransportButton.jsx
+client/src/components/transport/FitRouteBounds.jsx
+client/src/components/transport/FitHomeSchoolBounds.jsx
+client/src/components/CatchmentLayer.jsx
+client/src/components/layout/AppLayout.jsx
+client/src/components/HomeMarker.jsx
+client/src/components/HomeCatchmentButton.jsx
+client/src/App.js
+client/src/leaflet-fix.js
+client/src/icons.js
+client/src/index.js
+client/src/domains/home/HomeLocation.jsx
+client/src/domains/home/home.api.js
+client/src/domains/home/home.service.js
+client/src/domains/schools/schools.api.js
+client/src/domains/schools/schools.service.js
+client/src/domains/catchment/CatchmentMapLayer.jsx
+client/src/domains/catchment/catchment.styles.js
+client/src/domains/catchment/catchment.api.js
+client/src/domains/catchment/CatchmentSummary.jsx
+client/src/domains/map/marker.service.js
+client/src/domains/map/SchoolMarkersLayer.jsx
+client/public/robots.txt
+client/public/manifest.json
+docker-compose.yml
+.devcontainer/devcontainer.json
+gis_backup/build_gis/update_tiffin_db.js
+gis_backup/build_gis/build_tiffin.js
+
+########## FILE: README.md ##########
+
+# school-buddy
+For the schools project
+
+
+########## FILE: .vscode/settings.json ##########
+
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "127.0.0.1",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "School Map - SQL Tools",
+            "database": "schoolmap",
+            "username": "postgres",
+            "password": "postgres"
+        }
+    ]
+}
+
+########## FILE: server/package.json ##########
+
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+
+
+}
+
+
+
+
+########## FILE: server/src/db/pool.js ##########
+
+// server/src/db.js
+//
+// Centralised PostgreSQL connection using pg.Pool.
+// This module is imported by route files (e.g. routes/schools.js)
+// so that all DB access uses a single shared pool.
+//
+// It reads DATABASE_URL from server/.env, e.g.:
+//   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/schoolmap
+
+const { Pool } = require("pg");
+const path = require("path");
+const dotenv = require("dotenv");
+
+// Load environment variables from server/.env
+dotenv.config({
+  path: path.join(__dirname, "../.env"), // resolves to server/.env
+});
+
+// Connection string to Postgres
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.warn(
+    "[DB] WARNING: DATABASE_URL not set. Check server/.env if DB fails."
+  );
+}
+
+// Create a connection pool. This will automatically open connections
+// to Postgres as queries are made.
+const pool = new Pool({
+  connectionString,
+  // You can tune max connections if needed, e.g.:
+  // max: 10,
+});
+
+// If a pooled client errors while idle, log it so it's visible.
+pool.on("error", (err) => {
+  console.error("[DB] Unexpected error on idle client:", err);
+});
+
+module.exports = pool;
+
+
+########## FILE: server/src/db.js ##########
+
+// server/src/db.js
+// Compatibility shim: existing code imports "../db" or "../../db".
+// This keeps those imports working while the real implementation lives in ./db/pool.js.
+
+module.exports = require("./db/pool");
+
+
+########## FILE: server/src/index.js ##########
+
+// server/src/index.js
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+// ---------- MIDDLEWARE ----------
+app.use(cors());
+app.use(express.json());
+
+// ---------- ROUTES ----------
+const schoolsRoutes = require("./routes/schools");
+const catchmentsRoutes = require("./routes/catchments"); // geometry (plural)
+const userRoutes = require("./routes/user");
+const geocodeRoutes = require("./routes/geocode");
+const catchmentCheckRoutes = require("./routes/catchmentCheck");
+const transportRoutes = require("./routes/transport");
+
+// ✅ Catchment domain logic routes (singular)
+const catchmentDomainRoutes = require("./routes/catchment");
+
+// ✅ Health route
+const healthRoutes = require("./routes/health");
+
+// ❌ DEPRECATED — moved to routes/_deprecated
+// const styleRoutes = require("./routes/styles");
+// const tiffinIndividualsRoutes = require("./routes/tiffinIndividuals");
+
+// ---------- REGISTER ROUTES ----------
+app.use("/api/schools", schoolsRoutes);
+
+// EXISTING — geometry & visual catchment data
+app.use("/api/catchments", catchmentsRoutes);
+
+// ❌ DEPRECATED — styles now DB-driven via catchment domain
+// app.use("/api/styles", styleRoutes);
+
+// ❌ DEPRECATED — Tiffin feature removed from frontend
+// app.use("/api/tiffin", tiffinIndividualsRoutes);
+
+app.use("/api/user", userRoutes);
+app.use("/api/geocode", geocodeRoutes);
+app.use("/api/catchment-check", catchmentCheckRoutes);
+app.use("/api/transport-route", transportRoutes);
+
+// ✅ NEW — eligibility & future catchment logic
+app.use("/api/catchment", catchmentDomainRoutes);
+
+// ✅ NEW — health checks
+app.use("/api/health", healthRoutes);
+
+// ---------- ROOT HEALTH CHECK ----------
+app.get("/", (req, res) => {
+  res.send("SchoolBuddy API is running");
+});
+
+// ---------- SERVER START ----------
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = app;
+
+
+########## FILE: server/src/routes/user.js ##########
+
+// server/src/routes/user.js
+
+const express = require("express");
+const pool = require("../db");
+const router = express.Router();
+
+/**
+ * GET /api/user/home
+ */
+router.get("/home", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT home_postcode, home_lat, home_lon
+      FROM user_profile
+      LIMIT 1;
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({
+        home_postcode: null,
+        home_lat: null,
+        home_lon: null,
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ Error loading home:", err);
+    res.status(500).json({ error: "Failed to load home" });
+  }
+});
+
+/**
+ * POST /api/user/home
+ */
+router.post("/home", async (req, res) => {
+  const { home_postcode, home_lat, home_lon } = req.body;
+
+  try {
+    await pool.query("DELETE FROM user_profile");
+
+    await pool.query(
+      `
+      INSERT INTO user_profile (home_postcode, home_lat, home_lon)
+      VALUES ($1, $2, $3)
+      `,
+      [home_postcode, home_lat, home_lon]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Failed to save home:", err);
+    res.status(500).json({ error: "Failed to save home" });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/geocode.js ##########
+
+// server/src/routes/geocode.js
+
+const express = require("express");
+const { geocodePostcode, GeocodeError } = require("../domains/geocode/geocode.service");
+
+const router = express.Router();
+
+/**
+ * GET /api/geocode/postcode/:postcode
+ * UI-only geocoding
+ * - No DB
+ * - No persistence
+ * - Uses domain service
+ */
+router.get("/postcode/:postcode", async (req, res) => {
+  try {
+    const rawPostcode = req.params.postcode;
+
+    const { lat, lon } = await geocodePostcode(rawPostcode);
+
+    res.json({ lat, lon });
+  } catch (err) {
+    const isKnown = err instanceof GeocodeError;
+
+    if (isKnown) {
+      return res.status(err.status).json({
+        error: err.message,
+        code: err.code,
+      });
+    }
+
+    console.error("❌ Geocoding failed:", err);
+    res.status(500).json({
+      error: "Geocoding failed",
+      code: "GEOCODE_FAILED",
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/_deprecated/tiffin.js ##########
+
+const express = require("express");
+const pool = require("../db");
+
+const router = express.Router();
+
+/**
+ * GET /api/schools/:id/catchments
+ * Returns all catchment polygons for a school
+ */
+router.get("/:id/catchments", async (req, res) => {
+  const { id } = req.params;
+
+  console.log("======= FETCHING CATCHMENTS FROM DB =======");
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        type,
+        boundary_geojson
+      FROM catchments
+      WHERE school_id = $1
+      ORDER BY type;
+      `,
+      [id]
+    );
+
+    return res.json({
+      school_id: id,
+      catchments: result.rows,
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching catchments:", err);
+    return res.status(500).json({ error: "Failed to fetch catchments" });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/_deprecated/tiffinIndividuals.js ##########
+
+const express = require("express");
+const pool = require("../db");
+const router = express.Router();
+
+router.get("/individuals", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id,
+        postcode,
+        ST_Y(geom) AS lat,
+        ST_X(geom) AS lon
+      FROM tiffin_individuals
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error loading tiffin individuals:", err);
+    res.status(500).json({ error: "Failed to load individual points" });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/_deprecated/styles.js ##########
+
+// server/src/routes/styles.js
+
+const express = require("express");
+const router = express.Router();
+
+/**
+ * Returns polygon style definitions
+ */
+router.get("/:schoolId", (req, res) => {
+  const id = Number(req.params.schoolId);
+
+  const styles = {
+    1: { color: "#1e90ff", weight: 2, fillOpacity: 0.25 },
+    2: { color: "#32cd32", weight: 2, fillOpacity: 0.25 },
+    3: { color: "#ff8c00", weight: 2, fillOpacity: 0.25 },
+  };
+
+  res.json(styles[id] || styles[1]);
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchment/geometry.js ##########
+
+// server/src/routes/catchment/geometry.js
+
+const express = require('express');
+const router = express.Router();
+
+// IMPORTANT:
+// All catchment logic now lives in domains/catchment.
+// This route must remain a thin HTTP wrapper only.
+const catchmentService = require('../../domains/catchment/catchment.service');
+
+router.get('/:schoolId', async (req, res) => {
+  try {
+    const schoolId = Number(req.params.schoolId);
+
+    if (!Number.isInteger(schoolId)) {
+      return res.status(400).json({ error: 'Invalid schoolId' });
+    }
+
+    const data = await catchmentService.getCatchmentForSchool(schoolId);
+    return res.json(data);
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      error: err.message || 'Internal server error',
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchment/eligibility.js ##########
+
+// server/src/routes/catchment/eligibility.js
+
+const express = require("express");
+const pool = require("../../db"); // ✅ FIXED PATH (was ../db before)
+const router = express.Router();
+
+/**
+ * POST /api/catchment-check
+ *
+ * Body:
+ * {
+ *   home_lat: number,
+ *   home_lon: number
+ * }
+ *
+ * Returns factual spatial results only.
+ */
+router.post("/", async (req, res) => {
+  const { home_lat, home_lon } = req.body;
+
+  if (typeof home_lat !== "number" || typeof home_lon !== "number") {
+    return res.status(400).json({
+      error: "home_lat and home_lon must be numbers",
+    });
+  }
+
+  try {
+    // Home point as geography-safe WKT
+    const homePoint = `SRID=4326;POINT(${home_lon} ${home_lat})`;
+
+    // -------------------------------
+    // 1️⃣ Radius-based schools
+    // -------------------------------
+    const radiusQuery = `
+      SELECT
+        s.id AS school_id,
+        s.name,
+        'radius' AS catchment_type,
+        ST_Distance(
+          ST_SetSRID(ST_MakePoint(s.lon, s.lat), 4326)::geography,
+          ST_GeogFromText($1)
+        ) / 1000 AS distance_km,
+        ST_DWithin(
+          ST_SetSRID(ST_MakePoint(s.lon, s.lat), 4326)::geography,
+          ST_GeogFromText($1),
+          s.radius_km * 1000
+        ) AS inside_catchment
+      FROM schools s
+      WHERE s.catchment_type = 'radius'
+        AND s.radius_km IS NOT NULL;
+    `;
+
+    // -------------------------------
+    // 2️⃣ Polygon-based schools (aggregated)
+    // -------------------------------
+    const polygonQuery = `
+      SELECT
+        s.id AS school_id,
+        s.name,
+        'polygon' AS catchment_type,
+        BOOL_OR(
+          ST_Contains(
+            c.boundary_geom,
+            ST_SetSRID(ST_MakePoint($2, $1), 4326)
+          )
+        ) AS inside_catchment
+      FROM schools s
+      JOIN catchments c
+        ON c.school_id = s.id
+      WHERE s.catchment_type = 'polygon'
+        AND c.active = true
+      GROUP BY s.id, s.name;
+    `;
+
+    const [radiusResult, polygonResult] = await Promise.all([
+      pool.query(radiusQuery, [homePoint]),
+      pool.query(polygonQuery, [home_lat, home_lon]),
+    ]);
+
+    res.json({
+      home: {
+        lat: home_lat,
+        lon: home_lon,
+      },
+      results: [...radiusResult.rows, ...polygonResult.rows],
+    });
+  } catch (err) {
+    console.error("❌ Catchment check failed:", err);
+    res.status(500).json({
+      error: "Catchment check failed",
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchment/index.js ##########
+
+// server/src/routes/catchment/index.js
+
+const express = require('express');
+const router = express.Router();
+
+// Only mount eligibility routes here
+const eligibilityRoute = require('./eligibility.route');
+
+// Mount under /api/catchment
+router.use('/', eligibilityRoute);
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchment/eligibility.route.js ##########
+
+// server/src/routes/catchment/eligibility.route.js
+
+const express = require('express');
+const router = express.Router();
+
+// Import eligibility service DIRECTLY (no folder imports)
+const eligibilityService = require('../../domains/catchment/catchment.eligibility.service');
+
+/**
+ * POST /api/catchment/eligibility
+ *
+ * Body:
+ * {
+ *   school_ids: number[],
+ *   user_location: {
+ *     lat: number,
+ *     lon: number
+ *   }
+ * }
+ */
+router.post('/eligibility', async (req, res) => {
+  try {
+    const { school_ids, user_location } = req.body;
+
+    // Explicit, defensive validation
+    if (
+      !Array.isArray(school_ids) ||
+      !user_location ||
+      typeof user_location.lat !== 'number' ||
+      typeof user_location.lon !== 'number'
+    ) {
+      return res.status(400).json({
+        error: 'Invalid request payload',
+      });
+    }
+
+    const results = await eligibilityService.checkEligibilityForSchools({
+      schoolIds: school_ids,
+      userLocation: user_location,
+    });
+
+    return res.json(results);
+  } catch (err) {
+    console.error('Eligibility route error:', err);
+
+    return res.status(500).json({
+      error: 'Failed to evaluate eligibility',
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchmentCheck.js ##########
+
+// server/src/routes/catchmentCheck.js
+// Compatibility wrapper — eligibility routes now live in /routes/catchment/eligibility
+// Preserves POST /api/catchment-check with zero behavior change
+
+module.exports = require("./catchment/eligibility");
+
+
+########## FILE: server/src/routes/schools.js ##########
+
+// server/src/routes/schools.js
+
+const express = require("express");
+const router = express.Router();
+
+const { fetchAllSchools } = require("../domains/schools/schools.service");
+
+/**
+ * GET /api/schools
+ * HTTP-only wrapper
+ */
+router.get("/", async (req, res) => {
+  try {
+    const schools = await fetchAllSchools();
+    res.json(schools);
+  } catch (err) {
+    console.error("❌ Failed to fetch schools:", err.message);
+    res.status(500).json({
+      error: "Failed to fetch schools",
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/transport.js ##########
+
+const express = require("express");
+const pool = require("../db");
+
+const router = express.Router();
+
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const MAX_OPTIONS_PER_MODE = 3;
+
+// 🔍 DEBUG FLAG — turn off after verification
+const DEBUG_GOOGLE_RESPONSE = true;
+
+/**
+ * Get next Monday at 07:00 AM (epoch seconds)
+ */
+function getNextMonday7AM() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const daysUntilMonday = (8 - day) % 7 || 7;
+
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + daysUntilMonday);
+  monday.setHours(7, 0, 0, 0);
+
+  return Math.floor(monday.getTime() / 1000);
+}
+
+const metersToKm = (m) => Math.round((m / 1000) * 10) / 10;
+const secondsToMinutes = (s) => Math.round(s / 60);
+
+router.post("/", async (req, res) => {
+  const { home_lat, home_lon, school_id } = req.body;
+
+  if (
+    typeof home_lat !== "number" ||
+    typeof home_lon !== "number" ||
+    typeof school_id !== "number"
+  ) {
+    return res.status(400).json({
+      error: "home_lat, home_lon and school_id are required",
+    });
+  }
+
+  if (!GOOGLE_MAPS_API_KEY) {
+    console.error("❌ GOOGLE_MAPS_API_KEY is missing");
+    return res.status(500).json({
+      error: "Google Maps API key not configured",
+    });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name, lat, lon FROM schools WHERE id = $1`,
+      [school_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    const school = rows[0];
+    const departureTime = getNextMonday7AM();
+
+    const modes = [
+      { key: "driving", google: "driving" },
+      { key: "transit", google: "transit" },
+      { key: "walking", google: "walking" },
+      { key: "bicycling", google: "bicycling" },
+    ];
+
+    const routes = [];
+
+    for (const mode of modes) {
+      const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
+
+      url.searchParams.set("origin", `${home_lat},${home_lon}`);
+      url.searchParams.set("destination", `${school.lat},${school.lon}`);
+      url.searchParams.set("mode", mode.google);
+      url.searchParams.set("departure_time", departureTime);
+      url.searchParams.set("alternatives", "true");
+      url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
+
+      const response = await fetch(url.toString());
+      const data = await response.json();
+
+      console.log(`🚌 Google Directions [${mode.key}] status:`, data.status);
+
+      if (DEBUG_GOOGLE_RESPONSE && mode.key === "transit") {
+        console.log(
+          "🔍 FULL GOOGLE DIRECTIONS RESPONSE (TRANSIT):",
+          JSON.stringify(data, null, 2)
+        );
+      }
+
+      if (data.status !== "OK") continue;
+
+      const options = data.routes
+        .slice(0, MAX_OPTIONS_PER_MODE)
+        .map((route, idx) => {
+          const leg = route?.legs?.[0];
+          if (!leg) return null;
+
+          const steps = (leg.steps || []).map((step) => {
+            const details = step.transit_details;
+            const line = details?.line;
+            const agency = line?.agencies?.[0];
+
+            return {
+              travel_mode: step.travel_mode,
+              distance_m: step.distance?.value ?? null,
+              duration_s: step.duration?.value ?? null,
+              polyline: step.polyline?.points ?? null,
+
+              // ✅ TRANSIT ENRICHMENT (additive, non-breaking)
+              transit: details
+                ? {
+                    vehicle_type: line?.vehicle?.type ?? null,
+
+                    line: {
+                      short_name: line?.short_name ?? null,
+                      name: line?.name ?? null,
+                      color: line?.color ?? null,
+                      text_color: line?.text_color ?? null,
+                    },
+
+                    agency: agency
+                      ? {
+                          name: agency.name ?? null,
+                          url: agency.url ?? null,
+                        }
+                      : null,
+
+                    headsign: details.headsign ?? null,
+                    num_stops: details.num_stops ?? null,
+
+                    departure_stop: {
+                      name: details.departure_stop?.name ?? null,
+                      lat: details.departure_stop?.location?.lat ?? null,
+                      lng: details.departure_stop?.location?.lng ?? null,
+                    },
+
+                    arrival_stop: {
+                      name: details.arrival_stop?.name ?? null,
+                      lat: details.arrival_stop?.location?.lat ?? null,
+                      lng: details.arrival_stop?.location?.lng ?? null,
+                    },
+                  }
+                : null,
+            };
+          });
+
+          return {
+            option_index: idx,
+            duration_minutes: secondsToMinutes(leg.duration.value),
+            distance_km: metersToKm(leg.distance.value),
+            polyline: route.overview_polyline?.points || null,
+            steps,
+          };
+        })
+        .filter(Boolean);
+
+      if (options.length === 0) continue;
+
+      const primary = options[0];
+
+      routes.push({
+        mode: mode.key,
+        duration_minutes: primary.duration_minutes,
+        distance_km: primary.distance_km,
+        polyline: primary.polyline,
+        options,
+      });
+    }
+
+    res.json({
+      school_id: school.id,
+      school_name: school.name,
+      departure_time: "Monday 07:00",
+      routes,
+    });
+  } catch (err) {
+    console.error("❌ Transport route failed:", err);
+    res.status(500).json({
+      error: "Transport route calculation failed",
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/health.js ##########
+
+// server/src/routes/health.js
+
+const express = require("express");
+const pool = require("../db");
+
+const router = express.Router();
+
+/**
+ * GET /api/health
+ * - Confirms API is running
+ * - Confirms DB connectivity
+ * - Non-breaking, additive endpoint
+ */
+router.get("/", async (req, res) => {
+  try {
+    // quick DB probe
+    await pool.query("SELECT 1 AS ok");
+
+    return res.json({
+      ok: true,
+      api: "up",
+      db: "up",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("❌ Health check DB failed:", err.message);
+    return res.status(503).json({
+      ok: false,
+      api: "up",
+      db: "down",
+      error: err.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/routes/catchments.js ##########
+
+// server/src/routes/catchments.js
+// Compatibility wrapper — geometry routes now live in /routes/catchment/geometry
+// This preserves the /api/catchments endpoint with zero behavior change.
+
+module.exports = require("./catchment/geometry");
+
+
+########## FILE: server/src/domains/schools/schools.service.js ##########
+
+// server/src/domains/schools/schools.service.js
+
+const pool = require("../../db");
+
+/**
+ * fetchAllSchools
+ * - DB-driven
+ * - No business logic
+ * - Used by map + eligibility layers
+ */
+async function fetchAllSchools() {
+  const result = await pool.query(`
+    SELECT
+      id,
+      name,
+      lat,
+      lon,
+      radius_km,
+      show_radius,
+      show_polygon
+    FROM schools
+    ORDER BY name
+  `);
+
+  return result.rows;
+}
+
+module.exports = {
+  fetchAllSchools,
+};
+
+
+########## FILE: server/src/domains/catchment/catchment.eligibility.service.js ##########
+
+// server/src/domains/catchment/catchment.eligibility.service.js
+
+const pool = require('../../db');
+
+class CatchmentEligibilityService {
+  /**
+   * Calculate distance between two lat/lon points (km)
+   * (Used for radius schools – Step 6B)
+   */
+  calculateDistanceKm(lat1, lon1, lat2, lon2) {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const R = 6371;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  /**
+   * Check eligibility for ONE school
+   * Includes:
+   * - Step 6B: radius logic
+   * - Step 6C: polygon logic (individual → outer)
+   */
+  async checkEligibilityForSchool({ schoolId, userLocation }) {
+    const { lat: userLat, lon: userLon } = userLocation;
+
+    if (typeof userLat !== 'number' || typeof userLon !== 'number') {
+      throw new Error('Invalid user location');
+    }
+
+    /**
+     * 1️⃣ Load school data
+     */
+    const schoolResult = await pool.query(
+      `
+      SELECT
+        id,
+        lat,
+        lon,
+        radius_km,
+        show_radius,
+        show_polygon,
+        has_catchment
+      FROM schools
+      WHERE id = $1
+      `,
+      [schoolId]
+    );
+
+    const school = schoolResult.rows[0];
+    if (!school) {
+      throw new Error('School not found');
+    }
+
+    /**
+     * LEVEL 1 — No catchment = whole UK
+     */
+    if (!school.has_catchment) {
+      return {
+        school_id: schoolId,
+        in_catchment: true,
+        matched_by: 'all_uk',
+        distance_km: null,
+      };
+    }
+
+    /**
+     * 2️⃣ STEP 6B — Radius eligibility
+     */
+    if (school.show_radius && school.radius_km) {
+      const distanceKm = this.calculateDistanceKm(
+        userLat,
+        userLon,
+        school.lat,
+        school.lon
+      );
+
+      if (distanceKm <= Number(school.radius_km)) {
+        return {
+          school_id: schoolId,
+          in_catchment: true,
+          matched_by: 'radius',
+          distance_km: Number(distanceKm.toFixed(2)),
+        };
+      }
+    }
+
+    /**
+     * 3️⃣ STEP 6C — Polygon eligibility
+     */
+    if (school.show_polygon) {
+      // Convert user location to PostGIS point
+      const pointWKT = `SRID=4326;POINT(${userLon} ${userLat})`;
+
+      /**
+       * 3A — Individual polygons (highest priority)
+       */
+      const individualResult = await pool.query(
+        `
+        SELECT id
+        FROM catchments
+        WHERE school_id = $1
+          AND type = 'inner'
+          AND (active IS NULL OR active = true)
+          AND ST_Contains(boundary_geom, ST_GeomFromText($2))
+        LIMIT 1
+        `,
+        [schoolId, pointWKT]
+      );
+
+      if (individualResult.rows.length > 0) {
+        return {
+          school_id: schoolId,
+          in_catchment: true,
+          matched_by: 'individual',
+          distance_km: null,
+        };
+      }
+
+      /**
+       * 3B — Outer polygon
+       */
+      const outerResult = await pool.query(
+        `
+        SELECT id
+        FROM catchments
+        WHERE school_id = $1
+          AND type = 'outer'
+          AND (active IS NULL OR active = true)
+          AND ST_Contains(boundary_geom, ST_GeomFromText($2))
+        LIMIT 1
+        `,
+        [schoolId, pointWKT]
+      );
+
+      if (outerResult.rows.length > 0) {
+        return {
+          school_id: schoolId,
+          in_catchment: true,
+          matched_by: 'outer',
+          distance_km: null,
+        };
+      }
+    }
+
+    /**
+     * 4️⃣ No match → OUT of catchment
+     */
+    return {
+      school_id: schoolId,
+      in_catchment: false,
+      matched_by: null,
+      distance_km: null,
+    };
+  }
+
+  /**
+   * Bulk eligibility (used later)
+   */
+  async checkEligibilityForSchools({ schoolIds, userLocation }) {
+    const results = [];
+
+    for (const schoolId of schoolIds) {
+      results.push(
+        await this.checkEligibilityForSchool({ schoolId, userLocation })
+      );
+    }
+
+    return results;
+  }
+}
+
+module.exports = new CatchmentEligibilityService();
+
+
+########## FILE: server/src/domains/catchment/catchment.service.js ##########
+
+const {
+  CATCHMENT_LAYER_TYPES,
+  GEOMETRY_MODES,
+  CATCHMENT_STRUCTURES,
+} = require('./catchment.types');
+
+// ✅ NEW (Row 4-3): style resolver (read-only, safe)
+const catchmentStylesService = require('./catchment.styles.service');
+
+// IMPORTANT:
+// Use the same DB import that was previously used in routes/catchments.js
+const pool = require('../../db');
+
+/**
+ * Catchment Service
+ * -----------------
+ * Single source of truth for ALL catchment logic.
+ *
+ * Step 5A status:
+ * - Legacy logic moved AS-IS
+ * - Route delegates here
+ * - Semantic fix applied: inner -> individual
+ * - Classification metadata added (additive, FE-ignored)
+ * - No DB changes
+ * - No API breaking changes
+ *
+ * Step 4-3 status:
+ * - Visual styles attached (additive, FE-ignored)
+ */
+class CatchmentService {
+  /**
+   * Extract geometry from DB row.
+   * Behaviour preserved exactly:
+   * - Prefer boundary_geom (via ST_AsGeoJSON)
+   * - Fallback to boundary_geojson with recursive extraction
+   */
+  extractGeometry(row) {
+    if (row && row.boundary_geom_geojson) {
+      try {
+        return JSON.parse(row.boundary_geom_geojson);
+      } catch (e) {
+        // fall through
+      }
+    }
+
+    const g = row?.boundary_geojson;
+    if (!g) return null;
+
+    const extractRecursive = (obj) => {
+      if (!obj) return null;
+
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          const found = extractRecursive(item);
+          if (found) return found;
+        }
+        return null;
+      }
+
+      if (obj.type && (obj.coordinates || obj.geometries)) {
+        return obj;
+      }
+
+      if (obj.type === 'Feature' && obj.geometry) {
+        return extractRecursive(obj.geometry);
+      }
+
+      if (obj.type === 'FeatureCollection' && Array.isArray(obj.features)) {
+        for (const f of obj.features) {
+          const found = extractRecursive(f);
+          if (found) return found;
+        }
+        return null;
+      }
+
+      if (obj.geometry) return extractRecursive(obj.geometry);
+      if (obj.geometries) return extractRecursive(obj.geometries);
+
+      return null;
+    };
+
+    return extractRecursive(g);
+  }
+
+  /**
+   * NORMALISATION RULE
+   *
+   * Current reality:
+   * - 'inner' in existing data actually means postcode-level individual areas
+   *
+   * Canonical meaning:
+   * - 'individual' = postcode-based sub-catchments
+   * - 'inner'      = RESERVED for future ward-based catchments
+   */
+  normaliseLayerType(rawType) {
+    if (!rawType) return null;
+
+    // SEMANTIC FIX (rollback = change one line)
+    if (rawType === 'inner') {
+      return CATCHMENT_LAYER_TYPES.INDIVIDUAL;
+    }
+
+    return rawType;
+  }
+
+  /**
+   * MAIN ENTRY POINT
+   * ----------------
+   * Returns EXACTLY the same shape the frontend expects today,
+   * with ADDITIONAL classification + styling metadata appended.
+   */
+  async getCatchmentForSchool(schoolId) {
+    if (!Number.isInteger(Number(schoolId))) {
+      throw new Error('Invalid schoolId');
+    }
+
+    // 1️⃣ Load school flags (AS-IS)
+    const schoolResult = await pool.query(
+      `
+      SELECT
+        id,
+        lat,
+        lon,
+        radius_km,
+        show_radius,
+        show_polygon,
+        has_catchment
+      FROM schools
+      WHERE id = $1
+      `,
+      [schoolId]
+    );
+
+    const school = schoolResult.rows?.[0];
+    if (!school) {
+      const err = new Error('School not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const response = {
+      lat: school.lat,
+      lon: school.lon,
+      radius_km: school.radius_km,
+      show_radius: !!school.show_radius,
+      show_polygon: !!school.show_polygon,
+      polygons: [],
+      individual_polygons: [],
+    };
+
+    // 2️⃣ Load polygon catchments (AS-IS, with semantic fix)
+    if (response.show_polygon) {
+      const polygonResult = await pool.query(
+        `
+        SELECT
+          id,
+          school_id,
+          type,
+          year,
+          active,
+          boundary_geojson,
+          ST_AsGeoJSON(boundary_geom) AS boundary_geom_geojson
+        FROM catchments
+        WHERE school_id = $1
+          AND type IN ('inner', 'outer')
+          AND (active IS NULL OR active = true)
+        `,
+        [schoolId]
+      );
+
+      response.polygons = polygonResult.rows
+        .map((row) => {
+          const geom = this.extractGeometry(row);
+          if (!geom) return null;
+
+          return {
+            id: row.id,
+            type: this.normaliseLayerType(row.type),
+            year: row.year ?? null,
+            geometry: geom,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    // 3️⃣ Special-case: individual postcode polygons (Tiffin)
+    if (Number(schoolId) === 1) {
+      const individualResult = await pool.query(
+        `
+        SELECT
+          postcode_area,
+          ST_AsGeoJSON(geom) AS geom_geojson
+        FROM postcode_areas_tmp
+        `
+      );
+
+      response.individual_polygons = individualResult.rows
+        .map((row, idx) => {
+          if (!row.geom_geojson) return null;
+
+          let geom;
+          try {
+            geom = JSON.parse(row.geom_geojson);
+          } catch (e) {
+            return null;
+          }
+
+          return {
+            id: `postcode_${idx}`,
+            type: CATCHMENT_LAYER_TYPES.INDIVIDUAL,
+            label: row.postcode_area,
+            geometry: geom,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    /**
+     * ===============================
+     * STEP 5A-5 — CLASSIFICATION METADATA
+     * ===============================
+     * Additive only. Frontend ignores this for now.
+     */
+
+    const hasCatchment = !!school.has_catchment;
+    const layerSummary = {};
+
+    response.polygons.forEach((p) => {
+      layerSummary[p.type] = layerSummary[p.type] || {
+        type: p.type,
+        geometry_mode: GEOMETRY_MODES.POLYGON_POSTCODE,
+        count: 0,
+      };
+      layerSummary[p.type].count += 1;
+    });
+
+    if (response.individual_polygons.length > 0) {
+      layerSummary[CATCHMENT_LAYER_TYPES.INDIVIDUAL] =
+        layerSummary[CATCHMENT_LAYER_TYPES.INDIVIDUAL] || {
+          type: CATCHMENT_LAYER_TYPES.INDIVIDUAL,
+          geometry_mode: GEOMETRY_MODES.POLYGON_POSTCODE,
+          count: 0,
+        };
+
+      layerSummary[CATCHMENT_LAYER_TYPES.INDIVIDUAL].count +=
+        response.individual_polygons.length;
+    }
+
+    const layers = Object.values(layerSummary);
+
+    const structure = this.determineStructure({
+      hasCatchment,
+      showRadius: response.show_radius,
+      polygonLayers: layers,
+    });
+
+    response.catchment_profile = {
+      has_catchment: hasCatchment,
+      structure,
+      layers,
+    };
+
+    /**
+     * ===============================
+     * ROW 4-3 — ATTACH VISUAL STYLES
+     * ===============================
+     * Additive only.
+     * Failure must NEVER break response.
+     */
+
+    let styles = {};
+
+    try {
+      styles.outer = await catchmentStylesService.getStyle({
+        schoolId,
+        layerType: CATCHMENT_LAYER_TYPES.OUTER,
+        geometryMode: GEOMETRY_MODES.POLYGON_POSTCODE,
+      });
+
+      styles.individual = await catchmentStylesService.getStyle({
+        schoolId,
+        layerType: CATCHMENT_LAYER_TYPES.INDIVIDUAL,
+        geometryMode: GEOMETRY_MODES.POLYGON_POSTCODE,
+      });
+
+      styles.radius = await catchmentStylesService.getStyle({
+        schoolId,
+        layerType: CATCHMENT_LAYER_TYPES.RADIUS,
+        geometryMode: GEOMETRY_MODES.RADIUS,
+      });
+    } catch (e) {
+      styles = {};
+    }
+
+    response.styles = styles;
+
+    return response;
+  }
+
+  /**
+   * STRUCTURE DETERMINATION (Level 2)
+   * --------------------------------
+   * Derived, DB-driven, no side effects.
+   */
+  determineStructure({ hasCatchment, showRadius, polygonLayers }) {
+    if (!hasCatchment) {
+      return CATCHMENT_STRUCTURES.NONE;
+    }
+
+    if (showRadius && (!polygonLayers || polygonLayers.length === 0)) {
+      return CATCHMENT_STRUCTURES.RADIUS_ONLY;
+    }
+
+    if (polygonLayers && polygonLayers.length > 0) {
+      const hasIndividual = polygonLayers.some(
+        (l) => l.type === CATCHMENT_LAYER_TYPES.INDIVIDUAL
+      );
+
+      return hasIndividual
+        ? CATCHMENT_STRUCTURES.OUTER_PLUS_INDIVIDUAL
+        : CATCHMENT_STRUCTURES.OUTER_ONLY;
+    }
+
+    return CATCHMENT_STRUCTURES.NONE;
+  }
+}
+
+module.exports = new CatchmentService();
+
+
+########## FILE: server/src/domains/catchment/catchment.types.js ##########
+
+/**
+ * Catchment Types
+ * ----------------
+ * Canonical enums for catchment logic.
+ *
+ * IMPORTANT RULE:
+ * - Values here are the SOURCE OF TRUTH
+ * - DB values MUST match these exactly
+ * - Frontend relies on backend-normalised values only
+ */
+
+/**
+ * Catchment layer types (WHAT the area represents)
+ */
+const CATCHMENT_LAYER_TYPES = {
+  OUTER: 'outer',
+
+  /**
+   * Individual postcode-based sub-catchments
+   * (historically mislabelled as "inner")
+   */
+  INDIVIDUAL: 'individual',
+
+  /**
+   * RESERVED for future ward-based catchments
+   * (do NOT use yet)
+   */
+  INNER: 'inner',
+
+  /**
+   * Radius-based catchment
+   */
+  RADIUS: 'radius',
+};
+
+/**
+ * Geometry modes (HOW the area is defined)
+ */
+const GEOMETRY_MODES = {
+  /**
+   * Polygon made of postcode boundaries
+   */
+  POLYGON_POSTCODE: 'polygon_postcode',
+
+  /**
+   * Polygon made of electoral wards
+   * (future)
+   */
+  POLYGON_WARD: 'polygon_ward',
+
+  /**
+   * Radius / circle geometry
+   *
+   * IMPORTANT:
+   * - Must match DB `geometry_mode`
+   * - Used by eligibility + styling resolvers
+   */
+  RADIUS: 'circle',
+};
+
+/**
+ * High-level catchment structure classification
+ * (derived, not stored)
+ */
+const CATCHMENT_STRUCTURES = {
+  NONE: 'none',
+  RADIUS_ONLY: 'radius_only',
+  OUTER_ONLY: 'outer_only',
+  OUTER_PLUS_INDIVIDUAL: 'outer_plus_individual',
+};
+
+module.exports = {
+  CATCHMENT_LAYER_TYPES,
+  GEOMETRY_MODES,
+  CATCHMENT_STRUCTURES,
+};
+
+
+########## FILE: server/src/domains/catchment/catchment.resolver.js ##########
+
+// server/src/domains/catchment/catchment.resolver.js
+
+/**
+ * Catchment Eligibility Resolver
+ * ------------------------------
+ * Thin orchestration layer between routes/controllers
+ * and the eligibility service.
+ *
+ * Step 6A:
+ * - Stub only
+ * - Not wired to any route
+ */
+
+const eligibilityService = require('./catchment.eligibility.service');
+
+module.exports = {
+  eligibilityService,
+};
+
+
+########## FILE: server/src/domains/catchment/eligibility.route.js ##########
+
+// server/src/routes/catchment/eligibility.route.js
+
+const express = require('express');
+const router = express.Router();
+
+const eligibilityService = require('../../domains/catchment/catchment.eligibility.service');
+
+/**
+ * POST /api/catchment/eligibility
+ *
+ * Determines whether user is in catchment for given schools.
+ *
+ * Body:
+ * {
+ *   school_ids: number[],
+ *   user_location: { lat: number, lon: number }
+ * }
+ */
+router.post('/eligibility', async (req, res) => {
+  try {
+    const { school_ids, user_location } = req.body;
+
+    // Basic validation (explicit, not fancy)
+    if (
+      !Array.isArray(school_ids) ||
+      !user_location ||
+      typeof user_location.lat !== 'number' ||
+      typeof user_location.lon !== 'number'
+    ) {
+      return res.status(400).json({
+        error: 'Invalid request payload',
+      });
+    }
+
+    const results = await eligibilityService.checkEligibilityForSchools({
+      schoolIds: school_ids,
+      userLocation: user_location,
+    });
+
+    return res.json(results);
+  } catch (err) {
+    console.error('Eligibility error:', err);
+
+    return res.status(500).json({
+      error: 'Failed to evaluate eligibility',
+    });
+  }
+});
+
+module.exports = router;
+
+
+########## FILE: server/src/domains/catchment/catchment.styles.service.js ##########
+
+// server/src/domains/catchment/catchment.styles.service.js
+
+const db = require("../../db");
+
+/**
+ * CatchmentStylesService
+ *
+ * Read-only service for resolving visual styles
+ * for catchment layers.
+ *
+ * IMPORTANT:
+ * - No defaults hard-coded here
+ * - No frontend assumptions
+ * - Deterministic fallback order
+ */
+class CatchmentStylesService {
+  /**
+   * Resolve a style for a given layer.
+   *
+   * @param {Object} params
+   * @param {number|null} params.schoolId
+   * @param {string} params.layerType
+   * @param {string} params.geometryMode
+   * @param {number|null} params.year
+   *
+   * @returns {Object|null}
+   */
+  async getStyle({
+    schoolId = null,
+    layerType,
+    geometryMode,
+    year = null,
+  }) {
+    if (!layerType || !geometryMode) {
+      throw new Error("layerType and geometryMode are required");
+    }
+
+    // 1️⃣ Try school-specific style first
+    const specific = await db.query(
+      `
+      SELECT *
+      FROM catchment_styles
+      WHERE layer_type = $1
+        AND geometry_mode = $2
+        AND school_id = $3
+        AND ($4::int IS NULL OR year = $4)
+      ORDER BY year DESC NULLS LAST
+      LIMIT 1
+      `,
+      [layerType, geometryMode, schoolId, year]
+    );
+
+    if (specific.rows.length > 0) {
+      return specific.rows[0];
+    }
+
+    // 2️⃣ Fallback to default style
+    const fallback = await db.query(
+      `
+      SELECT *
+      FROM catchment_styles
+      WHERE layer_type = $1
+        AND geometry_mode = $2
+        AND school_id IS NULL
+        AND ($3::int IS NULL OR year = $3)
+      ORDER BY year DESC NULLS LAST
+      LIMIT 1
+      `,
+      [layerType, geometryMode, year]
+    );
+
+    if (fallback.rows.length > 0) {
+      return fallback.rows[0];
+    }
+
+    // 3️⃣ No style found (frontend will fallback)
+    return null;
+  }
+}
+
+module.exports = new CatchmentStylesService();
+
+
+########## FILE: server/src/domains/geocode/geocode.service.js ##########
+
+// server/src/domains/geocode/geocode.service.js
+
+class GeocodeError extends Error {
+  constructor(message, status = 500, code = "GEOCODE_ERROR") {
+    super(message);
+    this.name = "GeocodeError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function normalizePostcode(input) {
+  const raw = String(input || "");
+  const cleaned = raw.replace(/\s+/g, "").toUpperCase();
+
+  // We keep this intentionally light-touch to avoid rejecting edge cases.
+  // But we do prevent empty / obviously bad input.
+  if (!cleaned) {
+    throw new GeocodeError("Postcode is required", 400, "POSTCODE_REQUIRED");
+  }
+  if (cleaned.length < 5) {
+    throw new GeocodeError("Invalid postcode", 400, "POSTCODE_INVALID");
+  }
+
+  return cleaned;
+}
+
+/**
+ * geocodePostcode
+ * - UI-only geocoding (no DB, no persistence)
+ * - uses Node 18+ native fetch
+ * - upstream: Nominatim (OSM)
+ *
+ * Returns: { lat: number, lon: number }
+ * Throws: GeocodeError with status + code
+ */
+async function geocodePostcode(postcodeInput) {
+  const postcode = normalizePostcode(postcodeInput);
+
+  const url =
+    `https://nominatim.openstreetmap.org/search` +
+    `?format=json&limit=1&countrycodes=gb&q=${encodeURIComponent(postcode)}`;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        "User-Agent": "school-buddy/1.0",
+      },
+    });
+  } catch (err) {
+    // network/DNS/etc
+    throw new GeocodeError("Geocoding upstream unreachable", 502, "UPSTREAM_UNREACHABLE");
+  }
+
+  if (!response.ok) {
+    throw new GeocodeError("Geocoding upstream error", 502, "UPSTREAM_ERROR");
+  }
+
+  let results;
+  try {
+    results = await response.json();
+  } catch (err) {
+    throw new GeocodeError("Geocoding upstream invalid JSON", 502, "UPSTREAM_BAD_JSON");
+  }
+
+  if (!results || results.length === 0) {
+    throw new GeocodeError("Postcode not found", 404, "POSTCODE_NOT_FOUND");
+  }
+
+  const lat = parseFloat(results[0].lat);
+  const lon = parseFloat(results[0].lon);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new GeocodeError("Geocoding upstream returned invalid coordinates", 502, "UPSTREAM_BAD_COORDS");
+  }
+
+  return { lat, lon };
+}
+
+module.exports = {
+  GeocodeError,
+  geocodePostcode,
+};
+
+
+########## FILE: client/package.json ##########
+
+{
+  "name": "client",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://localhost:5000",
+  "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
+    "@react-leaflet/core": "^2.0.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@turf/turf": "^7.3.0",
+    "axios": "^1.13.2",
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-scripts": "^5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+
+
+########## FILE: client/src/api.js ##########
+
+// client/src/api.js
+// LEGACY shared API helpers
+// NOTE: This file is kept intentionally for backward compatibility.
+// New feature work should use domain APIs instead (see client/src/domains/*).
+
+const API_BASE = "/api";
+
+export async function fetchSchools() {
+  const res = await fetch(`${API_BASE}/schools`);
+  return res.json();
+}
+
+export async function fetchCatchments(schoolId) {
+  const res = await fetch(`${API_BASE}/catchments/${schoolId}`);
+  return res.json();
+}
+
+
+
+
+########## FILE: client/src/MapView.jsx ##########
+
+// client/src/MapView.jsx
+/**
+ * MapView — ORCHESTRATION ONLY (FROZEN)
+ * ------------------------------------
+ * Responsibilities:
+ * - Orchestrate map layers (markers, catchments, transport)
+ * - Hold cross-domain UI state
+ * - Call domain APIs (never raw fetch)
+ *
+ * Explicitly NOT allowed in this file:
+ * ❌ Direct fetch() or HTTP calls
+ * ❌ Business logic (eligibility, geometry rules)
+ * ❌ DB assumptions or transformations
+ *
+ * All data logic must live in:
+ * - client/src/domains/*
+ *
+ * This file is intentionally kept thin to support:
+ * - 2000+ schools
+ * - XLS → DB → UI scaling
+ * - Future map performance optimisations
+ */
+
+import React, { useState, useEffect } from "react";
+
+import AppLayout from "./components/layout/AppLayout";
+import MapCanvas from "./components/map/MapCanvas";
+
+import HomeMarker from "./components/HomeMarker";
+import PanToHome from "./components/PanToHome";
+
+import TransportPanel from "./components/transport/TransportPanel";
+import TransportRouteLayer from "./components/transport/TransportRouteLayer";
+import FitRouteBounds from "./components/transport/FitRouteBounds";
+import FitHomeSchoolBounds from "./components/transport/FitHomeSchoolBounds";
+
+// ✅ School markers domain
+import SchoolMarkersLayer from "./domains/map/SchoolMarkersLayer";
+
+// Catchment domain
+import CatchmentMapLayer from "./domains/catchment/CatchmentMapLayer";
+import CatchmentSummary from "./domains/catchment/CatchmentSummary";
+import { fetchCatchmentBySchoolId } from "./domains/catchment/catchment.api";
+
+// Home domain
+import HomeLocation from "./domains/home/HomeLocation";
+import { resolveHomeLocation } from "./domains/home/home.service";
+
+const DEFAULT_HOME_POSITION = [51.35139, -0.169696];
+const DEFAULT_RADIUS_COLOR = "#2c3e50";
+
+export default function MapView({ schools }) {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [catchments, setCatchments] = useState({});
+
+  const [homePostcode, setHomePostcode] = useState("SM5 4NZ");
+  const [homePosition, setHomePosition] = useState(DEFAULT_HOME_POSITION);
+  const [homeError, setHomeError] = useState(null);
+
+  const [catchmentResults, setCatchmentResults] = useState(null);
+  const [catchmentError, setCatchmentError] = useState(null);
+
+  // Transport
+  const [activeTransportSchool, setActiveTransportSchool] = useState(null);
+  const [activeTransportRoute, setActiveTransportRoute] = useState(null);
+  const [hoverTransportRoute, setHoverTransportRoute] = useState(null);
+
+  const schoolsList = Array.isArray(schools) ? schools : [];
+
+  const schoolNameById = Object.fromEntries(
+    schoolsList.map((s) => [s.id, s.name])
+  );
+
+  const toggleSchool = (schoolId) => {
+    setSelectedIds((prev) =>
+      prev.includes(schoolId)
+        ? prev.filter((id) => id !== schoolId)
+        : [...prev, schoolId]
+    );
+  };
+
+  const handleHomePostcodeSubmit = async (postcode) => {
+    try {
+      setHomeError(null);
+      setHomePostcode(postcode);
+
+      const { lat, lon } = await resolveHomeLocation(postcode);
+      setHomePosition([lat, lon]);
+
+      setActiveTransportSchool(null);
+      setActiveTransportRoute(null);
+      setHoverTransportRoute(null);
+    } catch (err) {
+      setHomeError(err.message || "Geocoding failed");
+    }
+  };
+
+  /**
+   * Fetch catchments via domain API
+   */
+  useEffect(() => {
+    selectedIds.forEach(async (id) => {
+      if (catchments[id]) return;
+
+      try {
+        const data = await fetchCatchmentBySchoolId(id);
+        setCatchments((prev) => ({ ...prev, [id]: data }));
+      } catch (e) {
+        console.error("❌ catchment load failed for", id, e);
+      }
+    });
+  }, [selectedIds, catchments]);
+
+  const routeActive = !!activeTransportRoute;
+
+  return (
+    <AppLayout
+      sidebar={
+        <>
+          <HomeLocation
+            defaultPostcode={homePostcode}
+            onSubmit={handleHomePostcodeSubmit}
+            error={homeError}
+          />
+
+          <CatchmentSummary
+            homeLocation={{ lat: homePosition[0], lon: homePosition[1] }}
+            onResults={setCatchmentResults}
+            setError={setCatchmentError}
+            error={catchmentError}
+            results={catchmentResults}
+          />
+
+          <h3 style={{ marginTop: 20 }}>Schools</h3>
+
+          {schoolsList.map((s) => (
+            <div
+              key={s.id}
+              style={{ display: "flex", alignItems: "center", marginBottom: 6 }}
+            >
+              <label style={{ flex: 1 }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(s.id)}
+                  onChange={() => toggleSchool(s.id)}
+                />
+                &nbsp;{s.name}
+              </label>
+
+              <img
+                src="/icons/transport_yellow.png"
+                alt="Show transport"
+                style={{ width: 20, height: 20, cursor: "pointer" }}
+                onClick={() => {
+                  setActiveTransportSchool(s);
+                  setActiveTransportRoute(null);
+                  setHoverTransportRoute(null);
+                }}
+              />
+            </div>
+          ))}
+
+          {activeTransportSchool && (
+            <TransportPanel
+              school={activeTransportSchool}
+              homeLocation={{
+                lat: homePosition[0],
+                lon: homePosition[1],
+                postcode: homePostcode,
+              }}
+              onClose={() => {
+                setActiveTransportSchool(null);
+                setActiveTransportRoute(null);
+                setHoverTransportRoute(null);
+              }}
+              onSelectRoute={(route) => {
+                setActiveTransportRoute(route);
+                setHoverTransportRoute(null);
+              }}
+              onHoverRoute={(route) => {
+                if (!activeTransportRoute) {
+                  setHoverTransportRoute(route);
+                }
+              }}
+              onLeaveRoute={() => {
+                setHoverTransportRoute(null);
+              }}
+            />
+          )}
+        </>
+      }
+      map={
+        <MapCanvas>
+          <PanToHome position={homePosition} />
+          <HomeMarker position={homePosition} postcode={homePostcode} />
+
+          {/* Markers */}
+          <SchoolMarkersLayer schools={schoolsList} />
+
+          <TransportRouteLayer
+            route={activeTransportRoute || hoverTransportRoute}
+          />
+
+          <FitHomeSchoolBounds
+            homePosition={homePosition}
+            school={activeTransportSchool}
+          />
+
+          <FitRouteBounds route={activeTransportRoute} />
+
+          {selectedIds.map((id) => {
+            const data = catchments[id];
+            if (!data) return null;
+
+            return (
+              <CatchmentMapLayer
+                key={id}
+                data={data}
+                radiusColor={DEFAULT_RADIUS_COLOR}
+                schoolLabel={schoolNameById[id]}
+                dimmed={routeActive}
+              />
+            );
+          })}
+        </MapCanvas>
+      }
+    />
+  );
+}
+
+
+########## FILE: client/src/components/CatchmentResultsList.jsx ##########
+
+import React from "react";
+
+export default function CatchmentResultsList({ results }) {
+  if (!results) return null;
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h4>Schools in your home catchment</h4>
+
+      {results.length === 0 ? (
+        <div style={{ fontSize: 13, color: "#555" }}>
+          No schools found in your home catchment.
+        </div>
+      ) : (
+        <ul style={{ paddingLeft: 18 }}>
+          {results.map((school) => (
+            <li key={school.school_id} style={{ marginBottom: 6 }}>
+              {school.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+
+########## FILE: client/src/components/MarkerLayer.jsx ##########
+
+import React from "react";
+import { Marker, Tooltip } from "react-leaflet";
+import L from "leaflet";
+
+// Public file URLs (no import needed)
+const iconBlue = "/icons/School_build.png";
+const iconRed = "/icons/School_red.png";
+const iconBlack = "/icons/school_black.png";
+
+const schoolIcons = {
+  tiffin: L.icon({ iconUrl: iconBlue, iconSize: [38, 38], iconAnchor: [19, 38] }),
+  nonsuch: L.icon({ iconUrl: iconRed, iconSize: [38, 38], iconAnchor: [19, 38] }),
+  wallington: L.icon({ iconUrl: iconBlack, iconSize: [38, 38], iconAnchor: [19, 38] }),
+};
+
+export default function MarkerLayer({ schools }) {
+  return (
+    <>
+      {schools.map((s) => {
+        let icon;
+
+        if (s.name.includes("Tiffin")) icon = schoolIcons.tiffin;
+        else if (s.name.includes("Nonsuch")) icon = schoolIcons.nonsuch;
+        else icon = schoolIcons.wallington;
+
+        return (
+          <Marker key={s.id} position={[s.lat, s.lon]} icon={icon}>
+            <Tooltip>{s.name}</Tooltip>
+          </Marker>
+        );
+      })}
+    </>
+  );
+}
+
+
+########## FILE: client/src/components/PanToHome.jsx ##########
+
+import { useEffect } from "react";
+import { useMap } from "react-leaflet";
+
+/**
+ * Pan map to home position when it changes.
+ * - Keeps current zoom level
+ * - No animation by default (Leaflet smooth pan)
+ * - UI-only, reversible
+ */
+export default function PanToHome({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!position) return;
+
+    map.panTo(position);
+  }, [position, map]);
+
+  return null;
+}
+
+
+########## FILE: client/src/components/HomePostcodeInput.jsx ##########
+
+import { useState, useEffect } from "react";
+
+/**
+ * UI-only Home Postcode Input
+ *
+ * Props:
+ * - defaultPostcode
+ * - onSubmit(postcode)
+ * - errorMessage (string | null)
+ */
+export default function HomePostcodeInput({
+  defaultPostcode = "",
+  onSubmit,
+  errorMessage,
+}) {
+  const [postcode, setPostcode] = useState(defaultPostcode);
+  const [localError, setLocalError] = useState("");
+
+  useEffect(() => {
+    setPostcode(defaultPostcode);
+  }, [defaultPostcode]);
+
+  const isValidUkPostcode = (value) => {
+    const cleaned = value.replace(/\s+/g, "").toUpperCase();
+    return /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test(cleaned);
+  };
+
+  const handleGo = () => {
+    const trimmed = postcode.trim().toUpperCase();
+
+    if (!isValidUkPostcode(trimmed)) {
+      setLocalError("Enter a valid UK postcode format");
+      return;
+    }
+
+    setLocalError("");
+
+    if (onSubmit) {
+      onSubmit(trimmed);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <strong>Home postcode</strong>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        <input
+          type="text"
+          value={postcode}
+          onChange={(e) => {
+            setPostcode(e.target.value.toUpperCase());
+            setLocalError("");
+          }}
+          placeholder="e.g. SM5 4NZ"
+          style={{
+            width: "50%",
+            padding: "6px 8px",
+            fontSize: 14,
+          }}
+        />
+
+        <button
+          onClick={handleGo}
+          style={{
+            padding: "6px 12px",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Go
+        </button>
+      </div>
+
+      {/* Validation error */}
+      {localError && (
+        <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+          {localError}
+        </div>
+      )}
+
+      {/* API error */}
+      {!localError && errorMessage && (
+        <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+          {errorMessage}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+########## FILE: client/src/components/map/MapCanvas.jsx ##########
+
+import React from "react";
+import { MapContainer, TileLayer } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
+/**
+ * MapCanvas
+ * ----------
+ * Leaflet shell only.
+ *
+ * Responsibilities:
+ * - Own MapContainer
+ * - Own TileLayer
+ * - Render children inside map
+ *
+ * IMPORTANT:
+ * - No domain logic
+ * - No state
+ * - No side effects
+ */
+export default function MapCanvas({
+  center = [51.37, -0.22],
+  zoom = 12,
+  children,
+}) {
+  return (
+    <MapContainer
+      center={center}
+      zoom={zoom}
+      style={{ height: "100%", width: "100%" }}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="© OpenStreetMap"
+      />
+      {children}
+    </MapContainer>
+  );
+}
+
+
+########## FILE: client/src/components/RadiusLayer.jsx ##########
+
+import React from "react";
+import { Circle, Tooltip } from "react-leaflet";
+
+/**
+ * RadiusLayer
+ *
+ * Backward-compatible:
+ * - accepts style props via spread
+ * - defaults preserved
+ */
+export default function RadiusLayer({
+  center,
+  radius_km,
+  label,
+  color = "#2c3e50",
+  opacity = 1,
+  weight = 2,
+}) {
+  return (
+    <Circle
+      center={center}
+      radius={radius_km * 1000}
+      pathOptions={{
+        color,
+        opacity,
+        weight,
+        fillOpacity: 0,
+      }}
+    >
+      {label && (
+        <Tooltip direction="top" offset={[0, -5]} opacity={1} permanent>
+          {label}
+        </Tooltip>
+      )}
+    </Circle>
+  );
+}
+
+
+########## FILE: client/src/components/transport/TransportPanel.jsx ##########
+
+import React, { useEffect, useMemo, useState } from "react";
+import TransportButton from "./TransportButton";
+import { fetchTransportRoute } from "./transportApi";
+
+const MODE_LABELS = {
+  driving: "🚗",
+  transit: "🚌",
+  walking: "🚶",
+  bicycling: "🚴",
+};
+
+const MODE_TITLES = {
+  driving: "Driving",
+  transit: "Transit",
+  walking: "Walking",
+  bicycling: "Cycling",
+};
+
+export default function TransportPanel({
+  school,
+  homeLocation,
+  onClose,
+  onSelectRoute,
+
+  // ✅ ADDITIVE (safe if unused)
+  onHoverRoute,
+  onLeaveRoute,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [transportData, setTransportData] = useState(null);
+  const [error, setError] = useState(null);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  // ✅ NEW: active mode tab
+  const [selectedMode, setSelectedMode] = useState(null);
+
+  const titleFrom = homeLocation?.postcode || "Home";
+  const titleTo = school?.name || "";
+
+  const payload = useMemo(() => {
+    const home_lat = Number(homeLocation?.lat);
+    const home_lon = Number(homeLocation?.lon);
+    const school_id = Number(school?.id);
+    if ([home_lat, home_lon, school_id].some((v) => Number.isNaN(v))) return null;
+    return { home_lat, home_lon, school_id };
+  }, [homeLocation?.lat, homeLocation?.lon, school?.id]);
+
+  useEffect(() => {
+    if (!payload) return;
+
+    setLoading(true);
+    setError(null);
+    setTransportData(null);
+    setSelectedKey(null);
+    setSelectedMode(null);
+
+    fetchTransportRoute(payload)
+      .then((data) => {
+        setTransportData(data);
+      })
+      .catch((err) => {
+        const msg = err?.message || "Failed to load transport options";
+        setError(msg);
+      })
+      .finally(() => setLoading(false));
+  }, [payload]);
+
+  const groupedRoutes = useMemo(() => {
+    const routes = transportData?.routes || [];
+    const grouped = {};
+
+    for (const modeRoute of routes) {
+      const mode = modeRoute.mode;
+      if (!grouped[mode]) grouped[mode] = [];
+
+      const options =
+        Array.isArray(modeRoute.options) && modeRoute.options.length > 0
+          ? modeRoute.options
+          : [
+              {
+                option_index: 0,
+                duration_minutes: modeRoute.duration_minutes,
+                distance_km: modeRoute.distance_km,
+                polyline: modeRoute.polyline,
+              },
+            ];
+
+      options.forEach((opt) => {
+        grouped[mode].push({
+          ...opt,
+          mode,
+          optionIndex: opt.option_index ?? 0,
+        });
+      });
+    }
+
+    return grouped;
+  }, [transportData]);
+
+  // ✅ Determine available modes + default selection
+  const availableModes = Object.keys(groupedRoutes);
+  const activeMode = selectedMode || availableModes[0];
+  const activeOptions = groupedRoutes[activeMode] || [];
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 12,
+        border: "1px solid #ddd",
+        borderRadius: 10,
+        background: "#fafafa",
+        display: "flex",
+        flexDirection: "column",
+        maxHeight: "65vh",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 6,
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 700 }}>
+            {titleFrom} to {titleTo}
+          </div>
+          <div style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>
+            (Monday 7:00 AM)
+          </div>
+        </div>
+        <button onClick={onClose} style={{ cursor: "pointer" }}>
+          ✕
+        </button>
+      </div>
+
+      {/* ✅ Mode tabs (icons only) */}
+      {!loading && !error && availableModes.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            marginBottom: 8,
+          }}
+        >
+          {availableModes.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setSelectedMode(mode)}
+              title={MODE_TITLES[mode] || mode}
+              style={{
+                flex: 1,
+                padding: "6px 0",
+                borderRadius: 6,
+                border:
+                  activeMode === mode
+                    ? "2px solid #1a73e8"
+                    : "1px solid #ccc",
+                background:
+                  activeMode === mode ? "#e8f0fe" : "#fff",
+                cursor: "pointer",
+                fontSize: 16,
+              }}
+            >
+              {MODE_LABELS[mode] || mode}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Content */}
+      <div
+        style={{
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          paddingRight: 4,
+        }}
+      >
+        {loading && <div>Loading transport…</div>}
+
+        {error && (
+          <div style={{ color: "red", fontSize: 12 }}>{error}</div>
+        )}
+
+        {!loading &&
+          !error &&
+          activeOptions.map((opt) => {
+            const key = `${activeMode}:${opt.optionIndex}`;
+            return (
+              <TransportButton
+                key={key}
+                route={opt}
+                optionIndex={opt.optionIndex}
+                isActive={selectedKey === key}
+                onClick={() => {
+                  setSelectedKey(key);
+                  onSelectRoute?.(opt);
+                }}
+                onMouseEnter={() => onHoverRoute?.(opt)}
+                onMouseLeave={() => onLeaveRoute?.()}
+              />
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+
+########## FILE: client/src/components/transport/transportApi.js ##########
+
+// client/src/components/transport/transportApi.js
+
+export async function fetchTransportRoute(payload) {
+  const res = await fetch("http://localhost:5000/api/transport-route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  let body = null;
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    body = await res.json();
+  } else {
+    body = await res.text();
+  }
+
+  if (!res.ok) {
+    const msg =
+      body && typeof body === "object" && body.error
+        ? body.error
+        : "Transport API failed";
+    const err = new Error(msg);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+
+  return body;
+}
+
+
+########## FILE: client/src/components/transport/TransportRouteLayer.jsx ##########
+
+import React, { useState } from "react";
+import { Polyline, CircleMarker, Tooltip } from "react-leaflet";
+import polyline from "@mapbox/polyline";
+
+// -------------------------------
+// Helpers (unchanged)
+// -------------------------------
+function vehicleEmoji(type) {
+  switch (type) {
+    case "BUS":
+      return "🚌";
+    case "TRAIN":
+    case "RAIL":
+      return "🚆";
+    case "SUBWAY":
+      return "🚇";
+    default:
+      return "🚉";
+  }
+}
+
+function stopFillColor(type) {
+  switch (type) {
+    case "BUS":
+      return "#e53935";
+    case "TRAIN":
+    case "RAIL":
+      return "#1e88e5";
+    case "SUBWAY":
+      return "#6a1b9a";
+    default:
+      return "#ffffff";
+  }
+}
+
+// Matches TransportPanel formatting
+function formatDuration(seconds) {
+  if (typeof seconds !== "number") return null;
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} Min`;
+
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h} Hr${h > 1 ? "s" : ""}${m > 0 ? ` ${m} Min` : ""}`;
+}
+
+function formatMiles(meters) {
+  if (typeof meters !== "number") return null;
+  const miles = (meters / 1000) * 0.621371;
+  return `${miles.toFixed(1)} mi`;
+}
+
+export default function TransportRouteLayer({ route }) {
+  const [hoveredStepIdx, setHoveredStepIdx] = useState(null);
+
+  if (!route) return null;
+
+  // -------------------------------
+  // NON-TRANSIT (DRIVING / WALKING / CYCLING)
+  // -------------------------------
+  if (route.mode !== "transit" || !Array.isArray(route.steps)) {
+    if (!route.polyline) return null;
+
+    const positions = polyline
+      .decode(route.polyline)
+      .map(([lat, lng]) => [lat, lng]);
+
+    const isDriving = route.mode === "driving";
+    const isWalking = route.mode === "walking";
+    const isCycling = route.mode === "bicycling";
+
+    // Normalize units for tooltips
+    const seconds =
+      typeof route.duration_minutes === "number"
+        ? route.duration_minutes * 60
+        : null;
+
+    const meters =
+      typeof route.distance_km === "number"
+        ? route.distance_km * 1000
+        : null;
+
+    // Style decisions (incremental)
+    let color = "#1a73e8"; // default driving blue
+    let weight = 6;
+    let dashArray = null;
+
+    if (isWalking) {
+      weight = 4;
+      dashArray = "4,8";
+    }
+
+    if (isCycling) {
+      weight = 4;
+      color = "#6a5acd"; // ✅ purple-blue for cycling
+    }
+
+    return (
+      <Polyline
+        positions={positions}
+        pathOptions={{
+          color,
+          weight,
+          opacity: 0.9,
+          dashArray,
+        }}
+      >
+        {/* 🚗 DRIVING tooltip */}
+        {isDriving && (
+          <Tooltip sticky opacity={0.95}>
+            <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+              <div>🚗 Drive</div>
+              {(formatDuration(seconds) || formatMiles(meters)) && (
+                <div>
+                  {formatDuration(seconds)}
+                  {formatDuration(seconds) && formatMiles(meters)
+                    ? " · "
+                    : null}
+                  {formatMiles(meters)}
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        )}
+
+        {/* 🚶 WALKING tooltip */}
+        {isWalking && (
+          <Tooltip sticky opacity={0.95}>
+            <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+              <div>🚶 Walk</div>
+              {(formatDuration(seconds) || formatMiles(meters)) && (
+                <div>
+                  {formatDuration(seconds)}
+                  {formatDuration(seconds) && formatMiles(meters)
+                    ? " · "
+                    : null}
+                  {formatMiles(meters)}
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        )}
+
+        {/* 🚴 CYCLING tooltip */}
+        {isCycling && (
+          <Tooltip sticky opacity={0.95}>
+            <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+              <div>🚴 Cycle</div>
+              {(formatDuration(seconds) || formatMiles(meters)) && (
+                <div>
+                  {formatDuration(seconds)}
+                  {formatDuration(seconds) && formatMiles(meters)
+                    ? " · "
+                    : null}
+                  {formatMiles(meters)}
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        )}
+      </Polyline>
+    );
+  }
+
+  // -------------------------------
+  // TRANSIT (steps) — unchanged
+  // -------------------------------
+  return (
+    <>
+      {route.steps.map((step, idx) => {
+        if (!step.polyline) return null;
+
+        const positions = polyline
+          .decode(step.polyline)
+          .map(([lat, lng]) => [lat, lng]);
+
+        const isWalking = step.travel_mode === "WALKING";
+        const isTransit = step.travel_mode === "TRANSIT";
+
+        let color = "#1a73e8";
+        let dashArray = null;
+        let weight = 6;
+
+        if (isWalking) {
+          dashArray = "4,8";
+          weight = 4;
+        }
+
+        if (isTransit && step.transit?.line?.color) {
+          color = step.transit.line.color;
+        }
+
+        if (hoveredStepIdx === idx) {
+          weight += 2;
+        }
+
+        const elements = [];
+
+        elements.push(
+          <Polyline
+            key={`line-${idx}`}
+            positions={positions}
+            eventHandlers={{
+              mouseover: () => setHoveredStepIdx(idx),
+              mouseout: () => setHoveredStepIdx(null),
+            }}
+            pathOptions={{
+              color,
+              weight,
+              opacity: 0.9,
+              dashArray,
+            }}
+          >
+            {isTransit && step.transit && (
+              <Tooltip sticky opacity={0.95}>
+                <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+                  <div>
+                    {vehicleEmoji(step.transit.vehicle_type)}{" "}
+                    {step.transit.line?.short_name ||
+                      step.transit.line?.name ||
+                      "Transit"}
+                  </div>
+
+                  {(step.transit.departure_stop?.name ||
+                    step.transit.arrival_stop?.name ||
+                    step.transit.headsign) && (
+                    <div>
+                      {step.transit.departure_stop?.name || "Start"}
+                      {" → "}
+                      {step.transit.arrival_stop?.name ||
+                        step.transit.headsign ||
+                        "End"}
+                    </div>
+                  )}
+
+                  {formatDuration(step.duration_s) && (
+                    <div>{formatDuration(step.duration_s)}</div>
+                  )}
+                </div>
+              </Tooltip>
+            )}
+
+            {isWalking && (
+              <Tooltip sticky opacity={0.95}>
+                <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+                  <div>🚶 Walk</div>
+                  {(formatDuration(step.duration_s) ||
+                    formatMiles(step.distance_m)) && (
+                    <div>
+                      {formatDuration(step.duration_s)}
+                      {formatDuration(step.duration_s) &&
+                      formatMiles(step.distance_m)
+                        ? " · "
+                        : null}
+                      {formatMiles(step.distance_m)}
+                    </div>
+                  )}
+                </div>
+              </Tooltip>
+            )}
+          </Polyline>
+        );
+
+        // Transit stop dots unchanged
+        if (isTransit) {
+          const from = step.transit?.departure_stop;
+          const to = step.transit?.arrival_stop;
+          const vehicleType = step.transit?.vehicle_type;
+
+          if (from?.lat && from?.lng) {
+            elements.push(
+              <CircleMarker
+                key={`dot-start-${idx}`}
+                center={[from.lat, from.lng]}
+                radius={5}
+                interactive
+                eventHandlers={{
+                  mouseover: () => setHoveredStepIdx(idx),
+                  mouseout: () => setHoveredStepIdx(null),
+                }}
+                pathOptions={{
+                  color: "#000",
+                  weight: 1.5,
+                  fillColor: stopFillColor(vehicleType),
+                  fillOpacity: 1,
+                }}
+              >
+                {from.name && (
+                  <Tooltip direction="top" offset={[0, -6]} opacity={1}>
+                    {vehicleEmoji(vehicleType)} {from.name}
+                  </Tooltip>
+                )}
+              </CircleMarker>
+            );
+          }
+
+          if (to?.lat && to?.lng) {
+            elements.push(
+              <CircleMarker
+                key={`dot-end-${idx}`}
+                center={[to.lat, to.lng]}
+                radius={5}
+                interactive
+                eventHandlers={{
+                  mouseover: () => setHoveredStepIdx(idx),
+                  mouseout: () => setHoveredStepIdx(null),
+                }}
+                pathOptions={{
+                  color: "#000",
+                  weight: 1.5,
+                  fillColor: stopFillColor(vehicleType),
+                  fillOpacity: 1,
+                }}
+              >
+                {to.name && (
+                  <Tooltip direction="top" offset={[0, -6]} opacity={1}>
+                    {vehicleEmoji(vehicleType)} {to.name}
+                  </Tooltip>
+                )}
+              </CircleMarker>
+            );
+          }
+        }
+
+        return <React.Fragment key={`step-${idx}`}>{elements}</React.Fragment>;
+      })}
+    </>
+  );
+}
+
+
+########## FILE: client/src/components/transport/TransportButton.jsx ##########
+
+import React from "react";
+
+function kmToMiles(km) {
+  if (typeof km !== "number") return null;
+  return km * 0.621371;
+}
+
+function formatDuration(minutes) {
+  if (typeof minutes !== "number") return "";
+  if (minutes < 60) return `${minutes} Min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h} Hr${h > 1 ? "s" : ""} ${m} Min`;
+}
+
+function modeLabel(mode) {
+  if (!mode) return "";
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
+function modeEmoji(mode) {
+  switch (mode) {
+    case "driving":
+      return "🚗";
+    case "transit":
+      return "🚌";
+    case "walking":
+      return "🚶";
+    case "bicycling":
+      return "🚴";
+    default:
+      return "🧭";
+  }
+}
+
+export default function TransportButton({
+  route,
+  onClick,
+  isActive,
+  optionIndex,
+
+  // ✅ ADDITIVE
+  onMouseEnter,
+  onMouseLeave,
+}) {
+  if (!route) return null;
+
+  const miles = kmToMiles(route.distance_km);
+  const milesText = typeof miles === "number" ? `${miles.toFixed(1)} mi` : "";
+  const durationText = formatDuration(route.duration_minutes);
+
+  const modeText =
+    optionIndex != null
+      ? `${modeLabel(route.mode)} ${optionIndex + 1}`
+      : modeLabel(route.mode);
+
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClick?.();
+      }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 8,
+        border: "1px solid #e5e5e5",
+        marginTop: 8,
+        cursor: "pointer",
+        background: isActive ? "#eef5ff" : "#fff",
+      }}
+    >
+      <div
+        style={{
+          width: 95,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span style={{ width: 18, textAlign: "center" }}>
+          {modeEmoji(route.mode)}
+        </span>
+        <span style={{ fontWeight: 600 }}>{modeText}</span>
+      </div>
+
+      <div style={{ width: 6, textAlign: "center", fontWeight: 600 }}>:</div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontSize: 13,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span>{durationText}</span>
+        <span style={{ color: "#666" }}>{milesText}</span>
+      </div>
+    </div>
+  );
+}
+
+
+########## FILE: client/src/components/transport/FitRouteBounds.jsx ##########
+
+import { useEffect } from "react";
+import { useMap } from "react-leaflet";
+import polyline from "@mapbox/polyline";
+import L from "leaflet";
+
+export default function FitRouteBounds({ route }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!route) return;
+
+    let latLngs = [];
+
+    // Transit route: collect all step polylines
+    if (route.mode === "transit" && Array.isArray(route.steps)) {
+      route.steps.forEach((step) => {
+        if (!step.polyline) return;
+        const points = polyline.decode(step.polyline);
+        points.forEach(([lat, lng]) => {
+          latLngs.push([lat, lng]);
+        });
+      });
+    }
+
+    // Non-transit route: single polyline
+    if (route.polyline) {
+      const points = polyline.decode(route.polyline);
+      points.forEach(([lat, lng]) => {
+        latLngs.push([lat, lng]);
+      });
+    }
+
+    if (latLngs.length === 0) return;
+
+    const bounds = L.latLngBounds(latLngs);
+
+    map.fitBounds(bounds, {
+      padding: [60, 60],
+      animate: true,
+    });
+  }, [route, map]);
+
+  return null;
+}
+
+
+########## FILE: client/src/components/transport/FitHomeSchoolBounds.jsx ##########
+
+import { useEffect } from "react";
+import { useMap } from "react-leaflet";
+import L from "leaflet";
+
+export default function FitHomeSchoolBounds({ homePosition, school }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!homePosition || !school?.lat || !school?.lon) return;
+
+    const bounds = L.latLngBounds([
+      [homePosition[0], homePosition[1]],
+      [school.lat, school.lon],
+    ]);
+
+    map.fitBounds(bounds, {
+      padding: [80, 80],
+      animate: true,
+    });
+  }, [homePosition, school, map]);
+
+  return null;
+}
+
+
+########## FILE: client/src/components/CatchmentLayer.jsx ##########
+
+import React from "react";
+import { Polygon, Marker } from "react-leaflet";
+import L from "leaflet";
+
+export default function CatchmentLayer({ polygons }) {
+  if (!polygons || polygons.length === 0) return null;
+
+  const toLatLngRings = (geometry) => {
+    if (!geometry || !geometry.coordinates) return [];
+
+    if (geometry.type === "MultiPolygon") {
+      return geometry.coordinates.map((poly) =>
+        poly[0].map(([lng, lat]) => [lat, lng])
+      );
+    }
+
+    if (geometry.type === "Polygon") {
+      return [geometry.coordinates[0].map(([lng, lat]) => [lat, lng])];
+    }
+
+    return [];
+  };
+
+  const styleForType = (type) => {
+    if (type === "outer") {
+      return { color: "#0044cc", weight: 2.5, fillOpacity: 0.1 };
+    }
+    if (type === "inner") {
+      return { color: "green", weight: 1.5, fillOpacity: 0.04 };
+    }
+    if (type === "individual") {
+      return { color: "#666", weight: 0.8, fillOpacity: 0.02 };
+    }
+    return { color: "#999", weight: 1, fillOpacity: 0.05 };
+  };
+
+  const labelIcon = (text) =>
+    new L.DivIcon({
+      className: "postcode-label",
+      html: `<div style="
+        font-size:11px;
+        color:#444;
+        opacity:0.6;
+        font-weight:500;
+        pointer-events:none;
+      ">${text}</div>`,
+    });
+
+  return (
+    <>
+      {polygons.map((p) => {
+        const rings = toLatLngRings(p.geometry);
+        if (!rings.length) return null;
+
+        return (
+          <React.Fragment key={p.id}>
+            {/* Draw polygon(s) */}
+            {rings.map((ring, idx) => (
+              <Polygon
+                key={`${p.id}-poly-${idx}`}
+                positions={ring}
+                pathOptions={styleForType(p.type)}
+              />
+            ))}
+
+            {/* 🔹 Label for individual postcode polygons */}
+            {p.type === "individual" && (
+              <Marker
+                key={`${p.id}-label`}
+                position={L.polygon(rings[0]).getBounds().getCenter()}
+                icon={labelIcon(p.id)}
+                interactive={false}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+
+########## FILE: client/src/components/layout/AppLayout.jsx ##########
+
+import React from "react";
+
+/**
+ * AppLayout
+ * ----------
+ * Pure layout component.
+ *
+ * Responsibilities:
+ * - Page-level flex layout
+ * - Sidebar vs Map split
+ *
+ * IMPORTANT:
+ * - No domain logic
+ * - No Leaflet imports
+ * - No state
+ */
+export default function AppLayout({ sidebar, map }) {
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Sidebar */}
+      <div
+        style={{
+          width: 280,
+          padding: 20,
+          borderRight: "1px solid #ccc",
+          overflowY: "auto",
+        }}
+      >
+        {sidebar}
+      </div>
+
+      {/* Map */}
+      <div style={{ flex: 1 }}>
+        {map}
+      </div>
+    </div>
+  );
+}
+
+
+########## FILE: client/src/components/HomeMarker.jsx ##########
+
+import L from "leaflet";
+import { Marker, Tooltip } from "react-leaflet";
+
+const homeIcon = new L.Icon({
+  iconUrl: "/icons/home_Board_opaque.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  tooltipAnchor: [0, -28],
+});
+
+/**
+ * Pure presentational component
+ */
+export default function HomeMarker({ position, postcode }) {
+  if (!position) return null;
+
+  return (
+    <Marker position={position} icon={homeIcon}>
+      <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+        <div>
+          <strong>Home</strong>
+          <br />
+          Postcode: {postcode}
+        </div>
+      </Tooltip>
+    </Marker>
+  );
+}
+
+
+########## FILE: client/src/components/HomeCatchmentButton.jsx ##########
+
+// client/src/components/HomeCatchmentButton.jsx
+
+import React from "react";
+import { fetchCatchmentEligibility } from "../domains/catchment/catchment.api";
+
+export default function HomeCatchmentButton({
+  homeLocation,
+  onResults,
+  setError,
+}) {
+  const handleClick = async () => {
+    setError(null);
+
+    try {
+      if (
+        !homeLocation ||
+        typeof homeLocation.lat !== "number" ||
+        typeof homeLocation.lon !== "number"
+      ) {
+        console.error("❌ Invalid catchment payload", homeLocation);
+        setError("Set your home postcode first");
+        return;
+      }
+
+      // ✅ Backend expects THIS SHAPE for /api/catchment-check
+      const data = await fetchCatchmentEligibility({
+        home_lat: homeLocation.lat,
+        home_lon: homeLocation.lon,
+      });
+
+      if (!data || !Array.isArray(data.results)) {
+        console.error("❌ Invalid catchment response payload", data);
+        setError("Unable to fetch catchment results");
+        return;
+      }
+
+      const insideCatchment = data.results.filter(
+        (r) => r && r.inside_catchment === true
+      );
+
+      onResults(insideCatchment);
+    } catch (err) {
+      console.error("❌ Catchment eligibility failed", err);
+      setError("Unable to fetch catchment results");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        marginTop: 10,
+        padding: "8px 10px",
+        width: "100%",
+        cursor: "pointer",
+      }}
+    >
+      Schools in my home catchment
+    </button>
+  );
+}
+
+
+########## FILE: client/src/App.js ##########
+
+// client/src/App.js
+
+import React, { useEffect, useState } from "react";
+import MapView from "./MapView";
+import { loadSchools } from "./domains/schools/schools.service";
+import "./App.css";
+
+export default function App() {
+  const [schools, setSchools] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        const data = await loadSchools();
+        if (isMounted) {
+          setSchools(data);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch schools:", err);
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return (
+    <div className="app">
+      <div className="header">
+        <img
+          src="/logo_monkey.png"
+          alt="logo"
+          style={{ height: 80, width: "auto" }}
+        />
+        <h2>School Buddy</h2>
+      </div>
+
+      {/* Map */}
+      <MapView schools={schools} />
+    </div>
+  );
+}
+
+
+########## FILE: client/src/leaflet-fix.js ##########
+
+import L from "leaflet";
+import iconRetina from "leaflet/dist/images/marker-icon-2x.png";
+import icon from "leaflet/dist/images/marker-icon.png";
+import shadow from "leaflet/dist/images/marker-shadow.png";
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: iconRetina,
+  iconUrl: icon,
+  shadowUrl: shadow,
+});
+
+
+########## FILE: client/src/icons.js ##########
+
+// client/src/icons.js
+import L from "leaflet";
+
+export const schoolIcon = new L.Icon({
+  iconUrl: "/icons/school_black.png",
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
+});
+
+
+########## FILE: client/src/index.js ##########
+
+// Import the main React library.
+// React lets us write components using JSX (HTML-like syntax inside JavaScript).
+import React from "react";
+
+// Import the part of React that is responsible for connecting
+// our React components to the real web browser DOM.
+import ReactDOM from "react-dom/client";
+
+// Import global styles for the whole application.
+// These styles apply to the entire page.
+import "./index.css";
+
+// Import the main App component.
+// This is the first React component that will be displayed on the screen.
+import App from "./App";
+
+
+// ------------------------------
+// CREATE THE ROOT OF OUR APP
+// ------------------------------
+
+// Find the <div id="root"> inside public/index.html.
+// The browser created this element when it loaded index.html.
+// React needs this element so it knows *where* to put the app on the page.
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+
+// ------------------------------
+// RENDER (DISPLAY) THE APP
+// ------------------------------
+
+// Tell React to "render" (show) the <App /> component
+// inside the div we found above (#root).
+// Everything inside our React application will now appear inside that div.
+root.render(<App />);
+
+
+// After this line runs, the App.js component loads,
+// then App.js loads MapView, and the whole UI appears on the screen.
+
+
+########## FILE: client/src/domains/home/HomeLocation.jsx ##########
+
+import React from "react";
+import HomePostcodeInput from "../../components/HomePostcodeInput";
+
+/**
+ * HomeLocation
+ * ------------
+ * Render-only UI wrapper for home location input.
+ *
+ * Responsibilities:
+ * - Render postcode input
+ * - Display error (if any)
+ * - Delegate submit handling upward
+ *
+ * IMPORTANT:
+ * - No fetch
+ * - No state
+ * - No map interaction
+ */
+export default function HomeLocation({
+  defaultPostcode,
+  onSubmit,
+  error,
+}) {
+  return (
+    <div>
+      <HomePostcodeInput
+        defaultPostcode={defaultPostcode}
+        onSubmit={onSubmit}
+        errorMessage={error}
+      />
+    </div>
+  );
+}
+
+
+########## FILE: client/src/domains/home/home.api.js ##########
+
+// client/src/domains/home/home.api.js
+
+/**
+ * Home Location API (Frontend)
+ * ----------------------------
+ * Thin wrapper around backend geocode endpoint.
+ *
+ * IMPORTANT:
+ * - Keep backwards-compatible exports while we refactor gradually.
+ * - Use relative /api so CRA proxy handles localhost in dev.
+ */
+
+/**
+ * Legacy-compatible function name (kept).
+ *
+ * @param {string} postcode
+ * @returns {Promise<{ lat: number, lon: number }>}
+ */
+export async function fetchLatLonByPostcode(postcode) {
+  // Preserve legacy behaviour: accept user input, backend normalises too,
+  // but we still make sure the URL is safe.
+  const safe = encodeURIComponent(String(postcode || "").trim());
+
+  const res = await fetch(`/api/geocode/postcode/${safe}`);
+
+  if (res.status === 404) {
+    const err = new Error(`Postcode not found: ${postcode}`);
+    err.code = 404;
+    throw err;
+  }
+
+  if (!res.ok) {
+    // Backend may return 502 if upstream geocoder fails, etc.
+    throw new Error("Unable to resolve postcode");
+  }
+
+  const { lat, lon } = await res.json();
+  return { lat, lon };
+}
+
+/**
+ * New canonical name (alias) — use this going forward.
+ */
+export async function geocodePostcode(postcode) {
+  return fetchLatLonByPostcode(postcode);
+}
+
+
+########## FILE: client/src/domains/home/home.service.js ##########
+
+// client/src/domains/home/home.service.js
+
+/**
+ * Home Location Service
+ * ---------------------
+ * Orchestrates postcode → lat/lon resolution.
+ *
+ * IMPORTANT:
+ * - No UI concerns
+ * - Behaviour must remain IDENTICAL to legacy MapView logic
+ */
+
+import { fetchLatLonByPostcode } from "./home.api";
+
+/**
+ * Resolve a postcode into a home location.
+ *
+ * @param {string} postcode
+ * @returns {Promise<{ lat: number, lon: number }>}
+ */
+export async function resolveHomeLocation(postcode) {
+  if (!postcode || typeof postcode !== "string") {
+    throw new Error("Invalid postcode");
+  }
+
+  const trimmed = postcode.trim();
+  if (!trimmed) {
+    throw new Error("Invalid postcode");
+  }
+
+  try {
+    return await fetchLatLonByPostcode(trimmed);
+  } catch (err) {
+    // Preserve legacy semantics
+    if (err && err.code === 404) throw err;
+    throw new Error("Unable to resolve postcode");
+  }
+}
+
+
+########## FILE: client/src/domains/schools/schools.api.js ##########
+
+// client/src/domains/schools/schools.api.js
+
+/**
+ * Schools Domain API
+ * ------------------
+ * Canonical source for fetching school data.
+ *
+ * IMPORTANT:
+ * - DB is the source of truth
+ * - XLS uploads must work without frontend changes
+ */
+
+export async function fetchSchools() {
+  const res = await fetch("/api/schools");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch schools");
+  }
+
+  return res.json();
+}
+
+
+########## FILE: client/src/domains/schools/schools.service.js ##########
+
+// client/src/domains/schools/schools.service.js
+
+import { fetchSchools } from "./schools.api";
+
+/**
+ * Schools Service
+ * ---------------
+ * Thin orchestration layer.
+ * Kept intentionally minimal.
+ */
+
+export async function loadSchools() {
+  return fetchSchools();
+}
+
+
+########## FILE: client/src/domains/catchment/CatchmentMapLayer.jsx ##########
+
+import React from "react";
+import CatchmentLayer from "../../components/CatchmentLayer";
+import RadiusLayer from "../../components/RadiusLayer";
+
+import {
+  toLeafletPolygonStyle,
+  toRadiusStyle,
+  pickStyle,
+} from "./catchment.styles";
+
+/**
+ * CatchmentMapLayer (Domain)
+ *
+ * Responsible for rendering ALL catchment geometry
+ * using DB-driven styles with safe fallbacks.
+ *
+ * VISUAL GUARANTEE:
+ * - If no DB style exists → visuals remain unchanged
+ */
+export default function CatchmentMapLayer({
+  data,
+  schoolId,
+  schoolName,
+  routeActive,
+  defaultRadiusColor,
+}) {
+  if (!data) return null;
+
+  const { polygons, individual_polygons, styles } = data;
+
+  // ---- FALLBACK STYLES (match current visuals exactly) ----
+  const fallbackOuterStyle = {
+    color: "#2563eb",
+    weight: 2,
+    opacity: 1,
+    fillColor: "#2563eb",
+    fillOpacity: 0.15,
+  };
+
+  const fallbackIndividualStyle = {
+    color: "#1d4ed8",
+    weight: 2,
+    opacity: 1,
+    fillColor: "#1d4ed8",
+    fillOpacity: 0.25,
+  };
+
+  const fallbackRadiusStyle = {
+    color: defaultRadiusColor,
+    opacity: routeActive ? 0.25 : 1,
+    weight: 2,
+  };
+
+  // ---- RESOLVED STYLES (DB → Leaflet, fallback-safe) ----
+  const outerStyle = toLeafletPolygonStyle(
+    pickStyle(styles, "outer"),
+    fallbackOuterStyle
+  );
+
+  const individualStyle = toLeafletPolygonStyle(
+    pickStyle(styles, "individual"),
+    fallbackIndividualStyle
+  );
+
+  const radiusStyle = toRadiusStyle(
+    pickStyle(styles, "radius"),
+    fallbackRadiusStyle
+  );
+
+  return (
+    <>
+      {polygons?.length > 0 && (
+        <CatchmentLayer
+          polygons={polygons}
+          style={outerStyle}
+        />
+      )}
+
+      {individual_polygons?.length > 0 && (
+        <CatchmentLayer
+          polygons={individual_polygons}
+          style={individualStyle}
+        />
+      )}
+
+      {data.show_radius &&
+        data.radius_km &&
+        data.lat &&
+        data.lon && (
+          <RadiusLayer
+            center={[data.lat, data.lon]}
+            radius_km={data.radius_km}
+            label={schoolName}
+            {...radiusStyle}
+          />
+        )}
+    </>
+  );
+}
+
+
+########## FILE: client/src/domains/catchment/catchment.styles.js ##########
+
+// client/src/domains/catchment/catchment.styles.js
+
+/**
+ * Catchment style helpers (Domain)
+ *
+ * IMPORTANT:
+ * - No rendering here
+ * - No fetch calls here
+ * - Pure functions only
+ * - Safe fallbacks when styles are missing
+ */
+
+/**
+ * Convert DB style row -> Leaflet polygon style object.
+ *
+ * @param {Object|null} styleRow
+ * @param {Object} [fallback]
+ * @returns {Object}
+ */
+export function toLeafletPolygonStyle(styleRow, fallback = {}) {
+  if (!styleRow) {
+    return { ...fallback };
+  }
+
+  // Some legacy columns may exist (border_color / opacity), but we prefer V2.
+  const strokeColor = styleRow.stroke_color ?? styleRow.border_color;
+  const strokeOpacity = styleRow.stroke_opacity ?? styleRow.opacity;
+  const fillOpacity = styleRow.fill_opacity ?? styleRow.opacity;
+
+  return {
+    color: strokeColor ?? fallback.color,
+    weight: styleRow.stroke_weight ?? fallback.weight,
+    opacity: strokeOpacity ?? fallback.opacity,
+    fillColor: styleRow.fill_color ?? fallback.fillColor,
+    fillOpacity: fillOpacity ?? fallback.fillOpacity,
+  };
+}
+
+/**
+ * Convert DB style row -> radius rendering config.
+ * (Your RadiusLayer uses props like { color, opacity } already.)
+ *
+ * @param {Object|null} styleRow
+ * @param {Object} [fallback]
+ * @returns {Object}
+ */
+export function toRadiusStyle(styleRow, fallback = {}) {
+  if (!styleRow) {
+    return { ...fallback };
+  }
+
+  const strokeColor = styleRow.stroke_color ?? styleRow.border_color;
+  const strokeOpacity = styleRow.stroke_opacity ?? styleRow.opacity;
+
+  return {
+    color: strokeColor ?? fallback.color,
+    opacity: strokeOpacity ?? fallback.opacity,
+    weight: styleRow.stroke_weight ?? fallback.weight,
+  };
+}
+
+/**
+ * Safe helper: pick a layer style from the API `styles` object.
+ *
+ * API example:
+ * styles = { outer: {...}, individual: {...}, radius: {...} }
+ *
+ * @param {Object|null|undefined} styles
+ * @param {string} key
+ * @returns {Object|null}
+ */
+export function pickStyle(styles, key) {
+  if (!styles) return null;
+  return styles[key] || null;
+}
+
+
+########## FILE: client/src/domains/catchment/catchment.api.js ##########
+
+// client/src/domains/catchment/catchment.api.js
+// Catchment Domain API
+// Canonical source for all catchment-related backend calls.
+// Geometry + eligibility are intentionally separated.
+
+
+// 1) Geometry — used by MapView to DRAW catchments
+export async function fetchCatchmentBySchoolId(schoolId) {
+  const res = await fetch(`/api/catchments/${schoolId}`);
+  if (!res.ok) {
+    throw new Error("Failed to load catchment geometry");
+  }
+  return res.json();
+}
+
+// 2) Eligibility (LEGACY, non-breaking)
+// UI currently relies on /api/catchment-check with {home_lat, home_lon}
+export async function fetchCatchmentEligibility(payload) {
+  const res = await fetch(`/api/catchment-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Catchment check failed");
+  }
+
+  return res.json();
+}
+
+// 3) Future endpoint (kept for later — do not wire UI yet)
+export async function fetchCatchmentEligibilityV2(payload) {
+  const res = await fetch(`/api/catchment/eligibility`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch eligibility");
+  }
+
+  return res.json();
+}
+
+
+########## FILE: client/src/domains/catchment/CatchmentSummary.jsx ##########
+
+// client/src/domains/catchment/CatchmentSummary.jsx
+
+import HomeCatchmentButton from "../../components/HomeCatchmentButton";
+import CatchmentResultsList from "../../components/CatchmentResultsList";
+
+/**
+ * CatchmentSummary (Domain)
+ *
+ * Sidebar UI for catchment eligibility.
+ * - Home catchment check button
+ * - Error display
+ * - Results list
+ *
+ * Pure UI composition:
+ * - no data fetching
+ * - no business logic
+ */
+export default function CatchmentSummary({
+  homeLocation,
+  onResults,
+  error,
+  setError,
+  results,
+}) {
+  return (
+    <>
+      <HomeCatchmentButton
+        homeLocation={homeLocation}
+        onResults={onResults}
+        setError={setError}
+      />
+
+      {error && (
+        <div style={{ marginTop: 8, color: "red", fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+
+      <CatchmentResultsList results={results} />
+    </>
+  );
+}
+
+
+########## FILE: client/src/domains/map/marker.service.js ##########
+
+// client/src/domains/map/marker.service.js
+
+/**
+ * Marker Service
+ * --------------
+ * Prepares school data for marker rendering.
+ *
+ * IMPORTANT:
+ * - No Leaflet imports
+ * - No UI logic
+ * - No filtering
+ * - Behaviour must remain IDENTICAL to legacy MarkerLayer usage
+ */
+
+/**
+ * Prepare marker input data from schools list.
+ *
+ * @param {Array} schools
+ * @returns {Array}
+ */
+export function prepareSchoolMarkers(schools) {
+  if (!Array.isArray(schools)) return [];
+
+  return schools
+    .filter((s) => s && s.lat != null && s.lon != null)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      lat: Number(s.lat),
+      lon: Number(s.lon),
+      school: s, // pass-through for now (non-breaking)
+    }));
+}
+
+
+########## FILE: client/src/domains/map/SchoolMarkersLayer.jsx ##########
+
+import React from "react";
+import MarkerLayer from "../../components/MarkerLayer";
+import { prepareSchoolMarkers } from "./marker.service";
+
+/**
+ * SchoolMarkersLayer
+ * ------------------
+ * Render-only wrapper for school markers.
+ *
+ * Responsibilities:
+ * - Prepare marker data via marker.service
+ * - Delegate actual rendering to existing MarkerLayer
+ *
+ * IMPORTANT:
+ * - No behaviour change
+ * - No Leaflet logic here
+ * - No filtering or styling
+ */
+export default function SchoolMarkersLayer({ schools }) {
+  const markers = prepareSchoolMarkers(schools);
+
+  // MarkerLayer currently expects full school objects,
+  // so we pass through original schools for now
+  return <MarkerLayer schools={schools} />;
+}
+
+
+########## FILE: client/public/robots.txt ##########
+
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow:
+
+
+########## FILE: client/public/manifest.json ##########
+
+{
+  "short_name": "React App",
+  "name": "Create React App Sample",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+
+
+########## FILE: docker-compose.yml ##########
+
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: schoolbuddy-postgis
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: schoolmap
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    command: >
+      postgres
+      -c listen_addresses='*'
+
+
+########## FILE: .devcontainer/devcontainer.json ##########
+
+{
+  "name": "School Buddy Dev",
+  "forwardPorts": [3000, 5000],
+  "portsAttributes": {
+    "3000": {
+      "label": "React Frontend",
+      "onAutoForward": "notify"
+    },
+    "5000": {
+      "label": "Node Backend",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm install"
+}
+
+
+########## FILE: gis_backup/build_gis/update_tiffin_db.js ##########
+
+// gis/update_tiffin_db.js
+//
+// Optional script to push the Tiffin polygons into PostGIS
+// (schools.postcode_geojson / catchment_geojson) for DB-based queries.
+//
+// For now the frontend reads GeoJSON files directly via /api/schools/catchment/tiffin.
+// This script is useful if you later want all geometry in Postgres/PostGIS.
+//
+
+const fs = require("fs");
+const path = require("path");
+const { Pool } = require("pg");
+const dotenv = require("dotenv");
+
+dotenv.config({ path: path.join(__dirname, "../server/.env") });
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// ID of Tiffin in the 'schools' table.
+// Adjust if your ID is different.
+const TIFFIN_ID = 1;
+
+async function main() {
+  const boundaryPath = path.join(__dirname, "tiffin_boundary.geojson");
+  const individualPath = path.join(__dirname, "tiffin_individual.geojson");
+
+  const boundary = fs.readFileSync(boundaryPath, "utf8");
+  const postcodes = fs.readFileSync(individualPath, "utf8");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+      UPDATE schools
+      SET 
+        catchment_geojson = $1::jsonb,
+        postcode_geojson  = $2::jsonb
+      WHERE id = $3
+    `,
+      [boundary, postcodes, TIFFIN_ID]
+    );
+
+    await client.query("COMMIT");
+    console.log("✔ Tiffin polygons written into DB");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ Failed to update Tiffin in DB:", err);
+  } finally {
+    client.release();
+  }
+}
+
+main().then(() => pool.end());
+
+
+########## FILE: gis_backup/build_gis/build_tiffin.js ##########
+
+// gis/build_tiffin.js
+//
+// Node script to build Tiffin catchment GeoJSONs from postcode
+// district source files.
+//
+// Usage (from gis folder):
+//   node build_tiffin.js
+//
+// Output:
+//   - tiffin_individual.geojson   (all 44 postcode districts as separate Features)
+//   - tiffin_boundary.geojson     (union/dissolved single catchment polygon)
+//
+// This script is run *offline*. The Express backend then simply
+// reads these two files and serves them to the React frontend.
+
+const fs = require("fs");
+const path = require("path");
+const turf = require("@turf/turf");
+
+// The 44 postcode district codes used by Tiffin Girls.
+const TIFFIN_CODES = [
+  "KT1",
+  "KT2",
+  "KT3",
+  "KT4",
+  "KT5",
+  "KT6",
+  "KT7",
+  "KT8",
+  "KT9",
+  "KT10",
+  "KT12",
+  "KT13",
+  "KT17",
+  "KT19",
+  "TW1",
+  "TW2",
+  "TW3",
+  "TW4",
+  "TW5",
+  "TW7",
+  "TW8",
+  "TW9",
+  "TW10",
+  "TW11",
+  "TW12",
+  "TW13",
+  "TW14",
+  "TW15",
+  "TW16",
+  "TW17",
+  "SW13",
+  "SW14",
+  "SW15",
+  "SW17",
+  "SW18",
+  "SW19",
+  "SW20",
+  "W3",
+  "W4",
+  "W5",
+  "W7",
+  "W13",
+  "SM4",
+  "CR4",
+];
+
+// Folder containing raw postcode district GeoJSON files.
+// E.g. KT.geojson, TW.geojson, etc.
+const GEOJSON_FOLDER = path.join(__dirname, "postcode_geojson");
+
+// Output file paths.
+const OUT_INDIVIDUAL = path.join(__dirname, "tiffin_individual.geojson");
+const OUT_BOUNDARY = path.join(__dirname, "tiffin_boundary.geojson");
+
+// Given a postcode like "KT5", return the area file name "KT.geojson".
+function areaFileForCode(code) {
+  return code.replace(/[0-9].*$/, ""); // strip all digits
+}
+
+function main() {
+  const features = [];
+
+  // ----- Collect individual postcode features -----
+  TIFFIN_CODES.forEach((code) => {
+    const area = areaFileForCode(code);
+    const filepath = path.join(GEOJSON_FOLDER, `${area}.geojson`);
+
+    if (!fs.existsSync(filepath)) {
+      console.warn(`❌ Missing source file for area ${area}: ${filepath}`);
+      return;
+    }
+
+    const raw = fs.readFileSync(filepath, "utf8");
+    const geo = JSON.parse(raw);
+
+    // Find correct property field for the district code.
+    const candidateFields = ["name", "code", "pcd", "pcds", "district"];
+    const sampleProps = geo.features[0]?.properties || {};
+    const nameField = candidateFields.find((f) => f in sampleProps);
+
+    if (!nameField) {
+      console.error(`❌ No suitable name field in ${filepath}`);
+      return;
+    }
+
+    // Find the specific feature with properties[nameField] === code.
+    const match = geo.features.find(
+      (f) =>
+        String(f.properties[nameField]).trim().toUpperCase() ===
+        code.toUpperCase()
+    );
+
+    if (!match) {
+      console.warn(`⚠️ No polygon found for ${code} in ${filepath}`);
+      return;
+    }
+
+    console.log(`✔ Found ${code}`);
+
+    // Normalize the properties to { code: "KT5" } etc.
+    features.push({
+      type: "Feature",
+      geometry: match.geometry,
+      properties: { code },
+    });
+  });
+
+  console.log(`\nTotal polygons found: ${features.length}`);
+
+  if (features.length === 0) {
+    console.error("❌ No polygons collected, aborting.");
+    process.exit(1);
+  }
+
+  // Write tiffin_individual.geojson as a FeatureCollection.
+  const individualFC = {
+    type: "FeatureCollection",
+    features,
+  };
+  fs.writeFileSync(OUT_INDIVIDUAL, JSON.stringify(individualFC));
+  console.log(`✅ Wrote individual postcodes: ${OUT_INDIVIDUAL}`);
+
+  // ----- Build merged boundary using turf.union / dissolve fallback -----
+  console.log("Merging polygons… this may take a few seconds…");
+
+  let merged;
+
+  try {
+    // Attempt pairwise union over all features.
+    merged = features.reduce((acc, feat, idx) => {
+      if (!acc) return feat;
+      return turf.union(acc, feat);
+    }, null);
+  } catch (err) {
+    console.warn("⚠️ Union failed, retrying using dissolve approach:", err);
+
+    // Fallback: dissolve all polygons by a constant property.
+    const withKey = features.map((f) => ({
+      ...f,
+      properties: { group: "tiffin" },
+    }));
+    const fc = { type: "FeatureCollection", features: withKey };
+    const dissolved = turf.dissolve(fc, { propertyName: "group" });
+
+    merged = dissolved.features[0];
+  }
+
+  const mergedFC = {
+    type: "FeatureCollection",
+    features: [merged],
+  };
+
+  fs.writeFileSync(OUT_BOUNDARY, JSON.stringify(mergedFC));
+  console.log(`✅ Wrote merged boundary: ${OUT_BOUNDARY}`);
+
+  console.log("\n✅ DONE — Tiffin catchment GeoJSONs generated.\n");
+}
+
+main();
+
+
+########## END OF BACKUP ##########

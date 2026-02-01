@@ -1,0 +1,202 @@
+================================================================================
+                           GIS PIPELINE – END TO END
+================================================================================
+
+RAW DATA (GeoJSON polygon files)
+--------------------------------
+You downloaded postcode shapes such as:
+
+    gis/postcode_geojson/
+        ├── KT.geojson
+        ├── SW.geojson
+        ├── TW.geojson
+        ├── SM.geojson
+        ├── W.geojson
+        ├── CR.geojson
+        └── ...
+
+These contain MultiPolygon shapes for each postcode district.
+
+================================================================================
+1) PYTHON SCRIPTS LOAD RAW GEOJSON INTO POSTGIS
+================================================================================
+
+You run scripts such as:
+
+    load_postcodes.py
+    load_tiffin_postcodes.py
+    build_tiffin_catchment.py
+
+These scripts perform:
+
+    ┌──────────────────────────────────────────────────────────┐
+    │  Read each GeoJSON file                                  │
+    │      ↓                                                   │
+    │  Extract postcode polygon coordinates                    │
+    │      ↓                                                   │
+    │  Convert shapes using Python (Shapely / GeoPandas)       │
+    │      ↓                                                   │
+    │  INSERT into PostGIS using ST_GeomFromGeoJSON()          │
+    └──────────────────────────────────────────────────────────┘
+
+
+POSTGIS RECEIVES:
+------------------
+Table: postcodes
+    code       → 'KT2'
+    geom       → geometry(MultiPolygon, 4326)
+
+Table: catchments
+    school     → 'Tiffin'
+    geom       → geometry(MultiPolygon, 4326)
+
+Result: The database now holds ALL postcode boundaries.
+
+
+================================================================================
+2) POSTGIS STORES THE POLYGONS INTERNALLY
+================================================================================
+
+PostGIS stores them as binary GIS shapes:
+
+Example:
+    MULTIPOLYGON((( ... hundreds of coordinate pairs ... )))
+
+PostGIS can:
+    - merge shapes  (ST_Union)
+    - compute areas (ST_Area)
+    - return shapes as GeoJSON (ST_AsGeoJSON)
+    - test if a point is inside a boundary (ST_Contains)
+
+This powers all your mapping logic.
+
+
+================================================================================
+3) BUILD TIFFIN CATCHMENT FROM POSTCODES (Union)
+================================================================================
+
+Script: build_tiffin_catchment.py  or  build_tiffin.js  
+
+Steps:
+
+    ┌────────────────────────────────────────────────────────┐
+    │  SELECT postcode polygons that belong to Tiffin        │
+    │      ↓                                                 │
+    │  Combine them using ST_Union                           │
+    │      ↓                                                 │
+    │  Produce ONE merged polygon                            │
+    │      ↓                                                 │
+    │  Save output to:                                       │
+    │     gis/tiffin_boundary.geojson                        │
+    │     gis/tiffin_individual.geojson                      │
+    └────────────────────────────────────────────────────────┘
+
+These two files will later be sent to the frontend.
+
+
+================================================================================
+4) BACKEND API (Node.js / Express) SERVES THE GEOJSON
+================================================================================
+
+Route: server/src/routes/tiffin.js
+
+When frontend calls:
+        GET /api/schools/catchment/tiffin
+
+The backend does:
+
+    ┌────────────────────────────────────────────────────────┐
+    │  Read tiffin_boundary.geojson                          │
+    │  Read tiffin_individual.geojson                        │
+    │      ↓                                                 │
+    │  Return JSON:                                          │
+    │      {                                                 │
+    │         merged: {...},                                 │
+    │         postcodes: {...}                               │
+    │      }                                                 │
+    └────────────────────────────────────────────────────────┘
+
+
+================================================================================
+5) FRONTEND MAPVIEW RECEIVES TIFFIN GEOJSON
+================================================================================
+
+MapView.jsx receives props:
+
+    schools              ← from App.js backend call
+    selectedSchools      ← from dropdown
+
+When user selects:
+    "The Tiffin Girls' School"
+
+MapView triggers:
+    fetch("/api/schools/catchment/tiffin")
+
+Received JSON:
+
+    {
+       merged: {... big polygon ...},
+       postcodes: {... many small polygons ...}
+    }
+
+
+================================================================================
+6) MAPVIEW RENDERS EVERYTHING USING REACT-LEAFLET
+================================================================================
+
+MapContainer renders OpenStreetMap tiles.
+
+Then:
+
+    ┌────────────────────────────────────────────────────────┐
+    │  Draw HOME marker                                      │
+    │  Draw School markers                                   │
+    │  Draw Circle catchments (Wallington/Nonsuch)          │
+    │                                                        │
+    │  If Tiffin selected:                                   │
+    │     <GeoJSON data={merged boundary}/>                  │
+    │     <GeoJSON data={individual postcodes}/>             │
+    │        bindTooltip(postcode label)                     │
+    └────────────────────────────────────────────────────────┘
+
+
+RESULT:
+
+You see:
+- Wallington / Nonsuch circles (from DB)
+- All school markers
+- Tiffin big pink boundary (merged polygon)
+- Tiffin postcode mini-shapes with labels
+
+All rendered in browser!
+
+
+================================================================================
+7) FINAL OUTPUT ON SCREEN
+================================================================================
+
+User sees:
+
+-------------------------------------------------------------------
+| Header (logo, title)                                            |
+-------------------------------------------------------------------
+| Sidebar (school dropdown)  |  MAGNIFICENT MAP VIEW              |
+|                           |                                     |
+|                           |  🏠 Home marker                      |
+|                           |  🔵 School markers                   |
+|                           |  🟣 Radius catchments                |
+|                           |  🌸 Tiffin merged catchment polygon  |
+|                           |  🧊 Individal postcode shapes        |
+-------------------------------------------------------------------
+
+ALL powered by:
+
+- Python scripts → create DB data
+- PostGIS → store/query polygons
+- Node backend → serves GeoJSON
+- React-Leaflet → renders shapes
+
+
+GeoJSON files  →  Python scripts  →  PostGIS DB  →  Backend API  →  MapView.jsx
+(postcodes)       (load + union)      (stores)       (serves)        (renders)
+

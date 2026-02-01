@@ -1,17 +1,39 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+// Import the main React library.
+// React lets us write components using JSX (HTML-like syntax inside JavaScript).
+import React from "react";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Import the part of React that is responsible for connecting
+// our React components to the real web browser DOM.
+import ReactDOM from "react-dom/client";
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+// Import global styles for the whole application.
+// These styles apply to the entire page.
+import "./index.css";
+
+// Import the main App component.
+// This is the first React component that will be displayed on the screen.
+import App from "./App";
+
+
+// ------------------------------
+// CREATE THE ROOT OF OUR APP
+// ------------------------------
+
+// Find the <div id="root"> inside public/index.html.
+// The browser created this element when it loaded index.html.
+// React needs this element so it knows *where* to put the app on the page.
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+
+// ------------------------------
+// RENDER (DISPLAY) THE APP
+// ------------------------------
+
+// Tell React to "render" (show) the <App /> component
+// inside the div we found above (#root).
+// Everything inside our React application will now appear inside that div.
+root.render(<App />);
+
+
+// After this line runs, the App.js component loads,
+// then App.js loads MapView, and the whole UI appears on the screen.

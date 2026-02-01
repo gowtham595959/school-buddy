@@ -7,8 +7,12 @@ CONTAINER="schoolbuddy-postgis"
 DB="schoolmap"
 USER="postgres"
 
-BACKUP_DIR="/workspaces/school-buddy/backups/db_backups"
-TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+# Unified backup directory
+BACKUP_DIR="/workspaces/school-buddy/backups"
+
+# Timestamp format: 16-Dec_15_44
+TIMESTAMP=$(date +"%d-%b_%H_%M")
+
 OUTFILE="$BACKUP_DIR/db_table_all_$TIMESTAMP.txt"
 
 # Tables to exclude from FULL DATA dump (summary still included)

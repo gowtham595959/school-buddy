@@ -1,0 +1,448 @@
+================================================================================
+                            MAIN FLOW: APPLICATION START
+================================================================================
+
+        User runs app
+                │
+                ▼
+        ┌────────────────────────┐
+        │      npm start         │
+        └────────────────────────┘
+                │
+                ▼
+        package.json → "react-scripts start"
+                │
+                ▼
+        ┌────────────────────────┐
+        │ CRA Dev Server starts  │
+        │ - Webpack bundles      │
+        │ - Hot Reload enabled   │
+        └────────────────────────┘
+                │
+                ▼
+   Browser opens http://localhost:3000
+                │
+                ▼
+        ┌────────────────────────┐
+        │  CRA serves index.html │
+        └────────────────────────┘
+                │
+                ▼
+Browser parses:
+    <div id="root"></div>
+                │
+                ▼
+Browser loads bundled:
+    - main.js
+    - main.css
+                │
+                ▼
+Browser executes main.js → runs index.js
+                │
+                ▼
+        ┌──────────────────────────┐
+        │ ReactDOM.createRoot(#root) │
+        │ root.render(<App />)        │
+        └──────────────────────────┘
+                │
+                ▼
+
+================================================================================
+        SUB-FLOW A: APP INITIALIZATION + FIRST API CALL (schools list)
+================================================================================
+
+        ┌────────────────────────────┐
+        │     App.js begins          │
+        │  state: schools = []       │
+        │         selected = []      │
+        └────────────────────────────┘
+                │
+                ▼
+useEffect() runs ONCE:
+                │
+                ▼
+FETCH:
+    fetch("/api/schools")
+                │
+                ▼
+Browser → GET /api/schools
+CRA proxy → backend
+Backend → returns JSON list
+                │
+                ▼
+res.json() → setSchools(data)
+                │
+                ▼
+React re-renders App.js with full school list
+
+================================================================================
+                          RETURN TO MAIN FLOW (RENDER)
+================================================================================
+
+App.js renders JSX:
+    ┌────────────────────────────────────────────┐
+    │ Header                                     │
+    │ Sidebar                                    │
+    │ Dropdown (now populated with schools)      │
+    │ <MapView schools={} selectedSchools={[]} />│
+    └────────────────────────────────────────────┘
+                │
+                ▼
+
+================================================================================
+                        SUB-FLOW D: MAPVIEW LIFECYCLE
+================================================================================
+
+MapView receives:
+    schools = full list
+    selectedSchools = []
+
+MapView initializes:
+    tiffin = null
+
+                │
+                ▼
+D1. INITIAL MAP RENDER
+    ┌──────────────────────────────────────────┐
+    │ MapContainer(center=HOME, zoom=11)       │
+    │   ├─ TileLayer (OpenStreetMap)           │
+    │   ├─ Home Marker (red icon)              │
+    │   ├─ No school markers yet               │
+    │   ├─ No circles                          │
+    │   └─ No Tiffin polygons                  │
+    └──────────────────────────────────────────┘
+
+                │
+                ▼
+Browser shows:
+ Header + Sidebar + Dropdown + Map (default state)
+
+================================================================================
+            SUB-FLOW B: USER SELECTS A SCHOOL (onChange event)
+================================================================================
+
+User selects dropdown item
+                │
+                ▼
+Browser fires "change"
+React synthetic event catches it
+                │
+                ▼
+onChange runs:
+    setSelected([...selectedOptions])
+                │
+                ▼
+React updates state → re-renders App.js
+
+================================================================================
+             RETURN TO MAIN FLOW: App.js RE-RENDERS MapView
+================================================================================
+
+App.js renders again with:
+    selectedSchools = ["Some School"]
+
+<MapView schools={} selectedSchools={["Some School"]} />
+
+                │
+                ▼
+
+================================================================================
+           SUB-FLOW D (continuation): MAPVIEW UPDATES WITH NEW PROPS
+================================================================================
+
+D3. MapView receives new props:
+    selectedSchools = ["Some School"]
+                │
+                ▼
+
+D3.1 Calculate visibleSchools:
+    visible = schools.filter(s.name ∈ selectedSchools)
+
+                │
+                ▼
+
+D3.2 Draw school markers + radius circles:
+    - Blue markers
+    - Green/Purple/Orange circles
+    - Tooltips showing school info
+
+                │
+                ▼
+
+D4. TIFFIN SPECIAL CASE:
+IF "The Tiffin Girls' School" is selected:
+    useEffect triggers loadTiffin()
+        ↓
+    Browser → GET /api/schools/catchment/tiffin
+        ↓
+    Backend returns GeoJSON polygons
+        ↓
+    setTiffin(data)
+ELSE:
+    tiffin = null
+
+                │
+                ▼
+
+D4.1 Render Tiffin merged boundary (GeoJSON)
+D4.2 Render individual postcode polygons with labels
+
+                │
+                ▼
+
+Leaflet redraws all layers:
+    • Home marker stays
+    • Selected schools appear
+    • Circles appear/disappear
+    • Tiffin polygon loads only if selected
+    • Tooltip labels updated
+
+================================================================================
+                                   END
+================================================================================
+
+
+
+*********** SECOND ONE same front end ***********
+
+================================================================================
+                        FRONTEND APPLICATION – MASTER FLOW
+================================================================================
+
+User runs:
+    npm start
+        │
+        ▼
+--------------------------------------------------------------------------------
+1) REACT DEV SERVER STARTS (CRA / react-scripts)
+--------------------------------------------------------------------------------
+- Bundles JS/CSS
+- Starts hot reload server
+- Opens http://localhost:3000
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+2) BROWSER LOADS index.html
+--------------------------------------------------------------------------------
+Contains:
+   <div id="root"></div>
+
+Browser loads bundled:
+   - main.js
+   - main.css
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+3) React starts via index.js
+--------------------------------------------------------------------------------
+ReactDOM.createRoot(#root)
+root.render(<App />)
+
+        │
+        ▼
+================================================================================
+A) APP.JS INITIALIZATION
+================================================================================
+App.js starts with state:
+
+   schools = []
+   selected = []
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+A1) FIRST USEEFFECT → LOAD SCHOOL LIST
+--------------------------------------------------------------------------------
+fetch("/api/schools")
+
+Backend returns:
+   [{ id, name, lat, lng, radius_m }, ...]
+
+React calls:
+   setSchools(data)
+Re-render App.js
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+A2) APP RENDERS UI
+--------------------------------------------------------------------------------
+- Header (logo + title)
+- Sidebar (dropdown)
+- MapView (passed props below):
+
+<MapView
+    schools={schools}
+    selectedSchools={selected}
+/>
+
+        │
+        ▼
+================================================================================
+B) USER SELECTS A SCHOOL (onChange)
+================================================================================
+
+User clicks dropdown item
+        │
+Browser fires "change" event
+        │
+React intercepts event
+        ▼
+
+onChange():
+   setSelected([...selectedOptions])
+
+React updates state → triggers re-render of App.js
+
+        │
+        ▼
+App now calls:
+
+<MapView
+   schools={schools}
+   selectedSchools={["Tiffin" or others]}
+/>
+
+================================================================================
+C) MAPVIEW.JSX FULL FLOW (MERGED)
+================================================================================
+
+MapView receives:
+   - schools
+   - selectedSchools
+
+Initial state:
+   tiffin = null
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+C1) useMemo → FILTER VISIBLE SCHOOLS
+--------------------------------------------------------------------------------
+
+visibleSchools = schools WHERE s.name ∈ selectedSchools
+
+Examples:
+- None selected → []
+- Wallington → [Wallington]
+- Tiffin → [Tiffin]
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+C2) useEffect → HANDLE TIFFIN POLYGON LOADING
+--------------------------------------------------------------------------------
+
+Does selectedSchools include "The Tiffin Girls' School"?
+        │
+      YES
+        ▼
+
+CALL loadTiffin():
+   fetch("/api/schools/catchment/tiffin")
+        │
+        ▼
+Backend returns:
+   {
+      merged: {GeoJSON Polygon},
+      postcodes: [{GeoJSON Polygon}, ...]
+   }
+
+setTiffin(data)
+React re-renders MapView()
+
+If NO:
+   setTiffin(null)
+
+        │
+        ▼
+================================================================================
+D) MAP RENDERING PIPELINE
+================================================================================
+
+MapContainer:
+   center = HOME
+   zoom = 11
+   TileLayer (OpenStreetMap tiles)
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+D1) HOME MARKER
+--------------------------------------------------------------------------------
+Marker(position=HOME, icon=red)
+Tooltip: "Home"
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+D2) SCHOOL MARKERS + RADIUS CIRCLES
+--------------------------------------------------------------------------------
+
+Loop through each school in visibleSchools:
+
+For each:
+    pos = [lat, lng]
+    radius = s.radius_m
+
+    Render:
+       - Blue marker for school
+       - Tooltip: school name
+
+    If radius exists:
+       Draw Circle(radius=meters)
+       Tooltip shows:
+          - School name
+          - Radius in km
+
+This handles Wallington, Nonsuch, etc.
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+D3) TIFFIN MERGED POLYGON (IF LOADED)
+--------------------------------------------------------------------------------
+
+If tiffin?.merged exists:
+    <GeoJSON data={tiffin.merged}>
+       - Thick magenta boundary
+       - fillOpacity ~0.25
+
+        │
+        ▼
+--------------------------------------------------------------------------------
+D4) TIFFIN POSTCODE POLYGONS
+--------------------------------------------------------------------------------
+
+If tiffin?.postcodes exists:
+    <GeoJSON data={tiffin.postcodes}>
+       - Thin magenta outlines
+       - Slight fill
+       - onEachFeature():
+            layer.bindTooltip(postcode code)
+
+        │
+        ▼
+================================================================================
+E) FINAL OUTPUT ON SCREEN
+================================================================================
+
+User sees:
+
+-----------------------------------------
+| Header                                |
+-----------------------------------------
+| Sidebar | MapContainer                |
+| (list   |                              |
+|  select)|  - Home marker               |
+|        |  - Selected school markers    |
+|        |  - Radius catchments          |
+|        |  - Tiffin polygons (if any)   |
+-----------------------------------------
+
+================================================================================
+                                END OF FLOW
+================================================================================
+

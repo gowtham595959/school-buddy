@@ -51,7 +51,8 @@ create_db_container() {
     -e POSTGRES_DB="$DB_NAME" \
     -p 5432:5432 \
     -v "$DB_VOLUME":/var/lib/postgresql/data \
-    "$DB_IMAGE"
+    "$DB_IMAGE" \
+    postgres -c listen_addresses='*'
 
   if [ $? -ne 0 ]; then
     log_err "Failed to create PostGIS container."
@@ -132,7 +133,6 @@ if [ -d "$BACKEND_DIR" ]; then
   fi
 
   log_ok "Starting backend with 'npm run dev'..."
-  # run in background and redirect logs
   npm run dev > "$BACKEND_DIR/backend.log" 2>&1 &
   BACKEND_PID=$!
   log_ok "Backend started (PID: $BACKEND_PID). Logs: $BACKEND_DIR/backend.log"
