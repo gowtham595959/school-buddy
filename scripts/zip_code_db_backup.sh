@@ -43,6 +43,7 @@ zip -r "$BACKUP_PATH" \
   -x ".env" \
   -x ".DS_Store" \
   -x "server/backend.log" \
+  -x "*.geojson" \
   -x "client/.cache/*"
 
 echo

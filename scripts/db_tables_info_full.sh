@@ -7,20 +7,25 @@ CONTAINER="schoolbuddy-postgis"
 DB="schoolmap"
 USER="postgres"
 
-# Unified backup directory
 BACKUP_DIR="/workspaces/school-buddy/backups"
-
-# Timestamp format: 16-Dec_15_44
 TIMESTAMP=$(date +"%d-%b_%H_%M")
-
 OUTFILE="$BACKUP_DIR/db_table_all_$TIMESTAMP.txt"
 
 # Tables to exclude from FULL DATA dump (summary still included)
 EXCLUDE_FULL_DATA=(
-  "geojson_raw"
-  "postcode_areas_tmp"
   "spatial_ref_sys"
+)
+
+# Tables that should be dumped in "slim" mode (no full boundaries)
+# We still print rows, but replace big geometry/json with stats/byte sizes.
+SLIM_GEO_TABLES=(
+  "canonical_geometries"
+  "catchment_geometries"
   "catchments"
+  "catchments_backup"
+  "postcode_areas_tmp"
+  "postcodes"
+  "deprecated_geojson_raw"
 )
 
 mkdir -p "$BACKUP_DIR"
@@ -54,8 +59,17 @@ for TABLE in $ALL_TABLES; do
   fi
 done
 
-# Final ordered table list
 ORDERED_TABLES=("${TABLES_WITH_ROWS[@]}" "${TABLES_EMPTY[@]}")
+
+# Helper: check if array contains value
+contains() {
+  local seeking=$1; shift
+  local item
+  for item in "$@"; do
+    [[ "$item" == "$seeking" ]] && return 0
+  done
+  return 1
+}
 
 # ==============================
 # WRITE BACKUP
@@ -74,23 +88,19 @@ ORDERED_TABLES=("${TABLES_WITH_ROWS[@]}" "${TABLES_EMPTY[@]}")
     echo "----------------------------------------------"
     echo "TABLE: public.$TABLE"
 
-    # Row count
     docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -Atc \
       "SELECT 'ROW COUNT: ' || count(*) FROM public.\"$TABLE\";"
 
-    # Column count
     docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -Atc \
       "SELECT 'COLUMN COUNT: ' || count(*)
        FROM information_schema.columns
        WHERE table_schema='public'
          AND table_name='$TABLE';"
 
-    # Table size in KB
     docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -Atc \
       "SELECT 'TABLE SIZE KB: ' ||
               pg_total_relation_size('public.$TABLE') / 1024;"
 
-    # Columns (single line, ordered)
     echo -n "COLUMNS: "
     docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -Atc \
       "SELECT string_agg(
@@ -113,17 +123,129 @@ ORDERED_TABLES=("${TABLES_WITH_ROWS[@]}" "${TABLES_EMPTY[@]}")
 
   for TABLE in "${ORDERED_TABLES[@]}"; do
     echo "##############################################"
-    echo "FULL DATA: public.$TABLE"
+    echo "DATA: public.$TABLE"
     echo "##############################################"
 
-    if [[ " ${EXCLUDE_FULL_DATA[@]} " =~ " $TABLE " ]]; then
+    if contains "$TABLE" "${EXCLUDE_FULL_DATA[@]}"; then
       echo "NOTE: Full data not printed for this table."
-      echo "Reason: large geospatial or system-managed table."
-      echo "Refer to a full pg_dump export for complete contents."
+      echo "Reason: system-managed / noisy table."
       echo
       continue
     fi
 
+    # Slim output for geo-heavy tables
+    if contains "$TABLE" "${SLIM_GEO_TABLES[@]}"; then
+      echo "NOTE: Slim dump (no full boundaries)."
+      echo
+
+      case "$TABLE" in
+        canonical_geometries)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              id,
+              geography_type,
+              member_code,
+              name,
+              source,
+              dataset_version,
+              updated_at,
+              ST_GeometryType(geom) AS geom_type,
+              ST_NPoints(geom) AS geom_points,
+              ROUND((ST_Area(geom::geography)/1000000.0)::numeric, 3) AS area_km2,
+              octet_length(geojson::text) AS geojson_bytes
+            FROM public.canonical_geometries
+            ORDER BY geography_type, member_code
+            LIMIT 200;
+          "
+          echo "NOTE: canonical_geometries limited to first 200 rows for readability."
+          ;;
+
+        catchment_geometries)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              id,
+              school_id,
+              school_name,
+              catchment_key,
+              geometry_kind,
+              member_code,
+              built_from_members_hash,
+              updated_at,
+              octet_length(geojson::text) AS geojson_bytes
+            FROM public.catchment_geometries
+            ORDER BY school_id, catchment_key, geometry_kind, member_code
+            LIMIT 500;
+          "
+          echo "NOTE: catchment_geometries limited to first 500 rows for readability."
+          ;;
+
+        catchments|catchments_backup)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              id,
+              school_id,
+              type,
+              year,
+              active,
+              created_at,
+              updated_at,
+              ST_GeometryType(boundary_geom) AS geom_type,
+              ST_NPoints(boundary_geom) AS geom_points,
+              ROUND((ST_Area(boundary_geom::geography)/1000000.0)::numeric, 3) AS area_km2,
+              octet_length(boundary_geojson::text) AS geojson_bytes
+            FROM public.\"$TABLE\"
+            ORDER BY school_id, type, year
+            LIMIT 200;
+          "
+          echo "NOTE: $TABLE limited to first 200 rows for readability."
+          ;;
+
+        postcode_areas_tmp)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              postcode_area,
+              ST_GeometryType(geom) AS geom_type,
+              ST_NPoints(geom) AS geom_points,
+              ROUND((ST_Area(geom::geography)/1000000.0)::numeric, 3) AS area_km2
+            FROM public.postcode_areas_tmp
+            ORDER BY postcode_area;
+          "
+          ;;
+
+        postcodes)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              id,
+              code,
+              ST_GeometryType(geom) AS geom_type
+            FROM public.postcodes
+            ORDER BY id
+            LIMIT 200;
+          "
+          echo "NOTE: postcodes limited to first 200 rows for readability."
+          ;;
+
+        deprecated_geojson_raw)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" -c "
+            SELECT
+              octet_length(data::text) AS json_bytes,
+              left(data::text, 200) AS json_preview
+            FROM public.deprecated_geojson_raw;
+          "
+          ;;
+
+        *)
+          docker exec "$CONTAINER" psql -U "$USER" -d "$DB" \
+            -c "SELECT * FROM public.\"$TABLE\" LIMIT 200;"
+          echo "NOTE: default slim limit 200 rows."
+          ;;
+      esac
+
+      echo
+      continue
+    fi
+
+    # Normal full dump for non-geo tables
     docker exec "$CONTAINER" psql -U "$USER" -d "$DB" \
       -c "SELECT * FROM public.\"$TABLE\";"
 

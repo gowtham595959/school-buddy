@@ -20,7 +20,7 @@ OUTPUT="$BACKUP_DIR/file_format_backup_${TIMESTAMP}.txt"
 MAX_TXT_SIZE=51200  # 50 KB
 
 # Extensions to include
-INCLUDE_EXTENSIONS="js jsx ts tsx json yaml yml md txt sh"
+INCLUDE_EXTENSIONS="js cjs jsx ts tsx json yaml yml md txt sh css sql"
 
 # Directories to exclude
 EXCLUDE_DIRS=(
@@ -32,6 +32,7 @@ EXCLUDE_DIRS=(
   backups
   docs
   docs_archives
+  geo
 )
 
 # Files to exclude by name pattern
@@ -44,6 +45,7 @@ EXCLUDE_PATTERNS=(
   "project_bundle.txt"
   "project-tree.txt"
   "schools.json"
+  *.geojson
 )
 
 echo "📄 Creating file format backup"
