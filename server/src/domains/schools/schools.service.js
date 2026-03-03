@@ -17,7 +17,11 @@ async function fetchAllSchools() {
       lon,
       radius_km,
       show_radius,
-      show_polygon
+      show_polygon,
+      has_catchment,
+      catchment_category,
+      icon_url,
+      marker_style_key
     FROM schools
     ORDER BY name
   `);

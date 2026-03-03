@@ -1,3 +1,5 @@
+// server/src/routes/transport.js
+
 const express = require("express");
 const pool = require("../db");
 
@@ -111,6 +113,7 @@ router.post("/", async (req, res) => {
               polyline: step.polyline?.points ?? null,
 
               // ✅ TRANSIT ENRICHMENT (additive, non-breaking)
+              // ✅ NEW: include departure/arrival time (this explains why options look identical but durations differ)
               transit: details
                 ? {
                     vehicle_type: line?.vehicle?.type ?? null,
@@ -131,6 +134,24 @@ router.post("/", async (req, res) => {
 
                     headsign: details.headsign ?? null,
                     num_stops: details.num_stops ?? null,
+
+                    // ✅ NEW (additive)
+                    departure_time: details.departure_time
+                      ? {
+                          text: details.departure_time.text ?? null,
+                          value: details.departure_time.value ?? null,
+                          time_zone: details.departure_time.time_zone ?? null,
+                        }
+                      : null,
+
+                    // ✅ NEW (additive)
+                    arrival_time: details.arrival_time
+                      ? {
+                          text: details.arrival_time.text ?? null,
+                          value: details.arrival_time.value ?? null,
+                          time_zone: details.arrival_time.time_zone ?? null,
+                        }
+                      : null,
 
                     departure_stop: {
                       name: details.departure_stop?.name ?? null,

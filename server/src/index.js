@@ -17,6 +17,8 @@ const userRoutes = require("./routes/user");
 const geocodeRoutes = require("./routes/geocode");
 const catchmentCheckRoutes = require("./routes/catchmentCheck");
 const transportRoutes = require("./routes/transport");
+const catchmentsV2Routes = require("./routes/catchmentsV2");
+
 
 // ✅ Catchment domain logic routes (singular)
 const catchmentDomainRoutes = require("./routes/catchment");
@@ -50,6 +52,9 @@ app.use("/api/catchment", catchmentDomainRoutes);
 
 // ✅ NEW — health checks
 app.use("/api/health", healthRoutes);
+
+app.use("/api/catchments-v2", catchmentsV2Routes);
+
 
 // ---------- ROOT HEALTH CHECK ----------
 app.get("/", (req, res) => {

@@ -1,0 +1,268 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+/* ✅ NEW: critical non-breaking fix
+   Ensures fixed widths do NOT expand when padding/border is applied.
+   This is what stops the left panel from going behind the map. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* =========================
+   Layout tokens (desktop defaults)
+   Single source of truth for widths
+========================= */
+:root {
+  --v2-left-panel-width: 413px;   /* matches current ExplorePage sidebar width */
+  --v2-right-drawer-width: 480px; /* placeholder for upcoming right drawer */
+}
+
+.v2-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.v2-topbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+
+  flex-wrap: nowrap;        /* keep everything on one line */
+}
+
+.v2-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+
+  /* ✅ NEW: prevents inline-img baseline spacing glitches */
+  display: block;
+}
+
+.v2-appname {
+  font-size: 27px;
+}
+
+.v2-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* =========================
+   Sidebar shell (ExplorePage wrapper)
+========================= */
+.v2-sidebar {
+  flex: 0 0 var(--v2-left-panel-width);
+  width: var(--v2-left-panel-width);
+  max-width: var(--v2-left-panel-width);
+  min-height: 0;
+}
+
+/* ✅ Left panel (the actual scroll container) */
+.v2-left-panel {
+  width: var(--v2-left-panel-width);
+  padding: 16px;
+  border-right: 1px solid #eee;
+  overflow-y: auto;
+  background: #fafafa;
+
+  /* ✅ NEW: keep section widths consistent even when scrollbar appears */
+  scrollbar-gutter: stable;
+}
+
+.v2-panel-top {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* --- V2 printed map labels --- */
+/* Leaflet-native centering is handled by iconSize + iconAnchor in JS */
+.v2-geo-label-marker {
+  pointer-events: none;
+  background: transparent;
+  border: none;
+}
+
+.v2-geo-label-text {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  opacity: 0.75;
+  color: #2f4f6f;
+  text-shadow: 0 0 2px rgba(255,255,255,0.8);
+
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+
+  max-width: 180px;
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.v2-geo-label-text--small {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.7;
+  max-width: 110px;
+}
+
+.v2-search {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
+.v2-filter-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+}
+
+/* ✅ icon buttons (header + rows) */
+.v2-icon-btn {
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  line-height: 1;
+}
+
+.v2-section {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.v2-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.v2-section-title {
+  font-weight: 700;
+}
+
+.v2-link-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #666;
+}
+
+.v2-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v2-school-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 5px 8px;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+}
+
+.v2-school-row-left {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  flex: 1;
+  min-width: 0;
+}
+
+.v2-school-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v2-school-name {
+  font-weight: 400;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-school-row input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+}
+
+.v2-map-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.v2-map-wrap .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.v2-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 500;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.v2-key-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  cursor: pointer;
+}
+
+.v2-legend-panel {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  width: 220px;
+}
+
+/* Always-visible transit line label */
+.v2-transit-line-label {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 6px !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Remove default leaflet arrow */
+.v2-transit-line-label::before {
+  display: none !important;
+}
