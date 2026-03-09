@@ -8,3 +8,6 @@ SET
 WHERE id = 12;  -- Chesham Grammar School
 
 COMMIT;
+
+
+select * from schools;

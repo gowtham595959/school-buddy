@@ -38,17 +38,6 @@ function schoolColorFromId(schoolId) {
 
 
 
-function normalizeName(v) {
-  if (v == null) return null;
-  const s = String(v).trim();
-  return s.length ? s : null;
-}
-
-function toNum(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
 function getLargestPolygonPart(feature) {
   try {
     const geom = feature?.geometry;

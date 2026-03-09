@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const repo = require("../domains/catchmentV2/catchmentV2.repo");
+const { rebuildSchoolCatchments } = require("../domains/catchmentV2/rebuild.service");
 
 /**
  * GET /api/catchments-v2/:schoolId
@@ -16,8 +18,6 @@ router.get("/:schoolId", async (req, res) => {
     if (Number.isNaN(schoolId)) {
       return res.status(400).json({ error: "Invalid schoolId" });
     }
-
-    const repo = await import("../domains/catchmentV2/catchmentV2.repo.js");
 
     const school = await repo.getSchoolById(schoolId);
     if (!school) {
@@ -85,8 +85,6 @@ router.post("/:schoolId/rebuild", async (req, res) => {
       return res.status(400).json({ error: "Invalid schoolId" });
     }
 
-    const mod = await import("../domains/catchmentV2/rebuild.service.js");
-
     // Always pass a safe object (never null)
     const opts = req.body && typeof req.body === "object" ? req.body : {};
 
@@ -95,7 +93,7 @@ router.post("/:schoolId/rebuild", async (req, res) => {
       opts.catchmentKey = String(req.query.catchment_key);
     }
 
-    const result = await mod.rebuildSchoolCatchments(schoolId, opts);
+    const result = await rebuildSchoolCatchments(schoolId, opts);
     return res.json(result);
   } catch (err) {
     console.error("❌ /api/catchments-v2/:schoolId/rebuild error:", err);

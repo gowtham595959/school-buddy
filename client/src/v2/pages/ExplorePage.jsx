@@ -90,12 +90,15 @@ export default function ExplorePage() {
 
   return (
     <div className="v2-page" style={shellStyle}>
-      <TopBar
-        postcode={postcode}
-        onChangePostcode={setPostcode}
-        onSubmitPostcode={submitPostcode}
-        error={homeError}
-      />
+   <TopBar
+  postcode={postcode}
+  // support both prop conventions (non-breaking)
+  onChangePostcode={setPostcode}
+  onSubmitPostcode={submitPostcode}
+  onPostcodeChange={setPostcode}
+  onPostcodeSubmit={submitPostcode}
+  error={homeError}
+/>
 
       <div className="v2-body" style={bodyStyle}>
         <div className="v2-sidebar" style={sidebarStyle}>

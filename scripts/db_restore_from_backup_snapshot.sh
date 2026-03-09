@@ -4,8 +4,10 @@ DB_CONTAINER="schoolbuddy-postgis"
 DB_NAME="schoolmap"
 DB_USER="postgres"
 
-# Default DB snapshot directory (new standard)
-DEFAULT_BACKUP_DIR="/workspaces/school-buddy/backups/db_backup_snapshot"
+# Resolve project root relative to this script (works locally and in DevContainer)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_BACKUP_DIR="$PROJECT_ROOT/backups/db_backup_snapshot"
 
 echo "======================================"
 echo "🔄 SCHOOL BUDDY - DATABASE RESTORE"
@@ -53,7 +55,7 @@ fi
 echo
 echo "🧠 Safety step — backing up current database before overwrite."
 
-SAFETY_BACKUP="/workspaces/school-buddy/backups/pre-restore-db_$(date +"%d-%b_%H_%M").backup"
+SAFETY_BACKUP="$PROJECT_ROOT/backups/pre-restore-db_$(date +"%d-%b_%H_%M").backup"
 
 docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > "$SAFETY_BACKUP"
 
@@ -81,7 +83,9 @@ echo
 echo "📥 Restoring backup from:"
 echo "   → $BACKUP_FILE"
 
-docker exec -i "$DB_CONTAINER" pg_restore -U "$DB_USER" -d "$DB_NAME" < "$BACKUP_FILE"
+docker cp "$BACKUP_FILE" "$DB_CONTAINER":/tmp/restore_target.backup
+docker exec "$DB_CONTAINER" pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner --no-privileges /tmp/restore_target.backup
+docker exec "$DB_CONTAINER" rm /tmp/restore_target.backup
 
 if [ $? -eq 0 ]; then
   echo

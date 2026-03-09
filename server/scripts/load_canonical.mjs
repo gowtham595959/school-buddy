@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-'use strict';
 
 /**
  * Canonical geometry loader (GeoJSON FeatureCollection)
@@ -17,22 +16,17 @@
  * - dry run mode
  *
  * Usage example (wards):
- * node load_canonical.js \
- *   --path ../../data/geo/ward/ONS_WARD_2025/ \
- *   --type ward \
- *   --codeProp WD25CD \
- *   --nameProp WD25NM \
- *   --datasetVersion ONS_WARD_2025 \
- *   --source "ONS Open Geography Portal" \
- *   --sourceSrid 4326
+ * node load_canonical.js --path ../../data/geo/ward/ONS_WARD_2025/ --type ward --codeProp WD25CD --nameProp WD25NM --datasetVersion ONS_WARD_2025 --source "ONS Open Geography Portal" --sourceSrid 27700
  */
 
-const fs = require('fs');
-const path = require('path');
-const dotenv = require('dotenv');
-const { Client } = require('pg');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+import pg from 'pg';
+import yargs from 'yargs/yargs';
+import { hideBin } from 'yargs/helpers';
+
+const { Client } = pg;
 
 function isDirectory(p) {
   try {
