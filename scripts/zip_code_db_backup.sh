@@ -33,7 +33,11 @@ cd "$ROOT_DIR" || exit 1
 zip -r "$BACKUP_PATH" \
   . \
   -x "*/node_modules/*" \
+  -x "node_modules/*" \
+  -x "gis_backup/*" \
+  -x "backups/*" \
   -x "*/.git/*" \
+  -x ".git/*" \
   -x "*/dist/*" \
   -x "*/build/*" \
   -x "*.log" \
