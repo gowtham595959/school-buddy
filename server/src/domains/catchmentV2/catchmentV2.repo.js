@@ -1,11 +1,11 @@
 // server/src/domains/catchmentV2/catchmentV2.repo.js
-import db from "../../db.js";
+const db = require("../../db");
 
 /**
  * Minimal school payload for V2 UI.
  * ✅ Include lat/lon so radius catchments can render as circles in V2.
  */
-export async function getSchoolById(schoolId) {
+async function getSchoolById(schoolId) {
   const { rows } = await db.query(
     `
     SELECT id, name, has_catchment, catchment_category, lat, lon
@@ -20,7 +20,7 @@ export async function getSchoolById(schoolId) {
 /**
  * Active V2 definitions for a school (source of truth for styling + members).
  */
-export async function getActiveDefinitions(schoolId) {
+async function getActiveDefinitions(schoolId) {
   const { rows } = await db.query(
     `
     SELECT *
@@ -39,7 +39,7 @@ export async function getActiveDefinitions(schoolId) {
  * The geometry cache is keyed by catchment_geometries.built_from_members_hash.
  * We must read that column (NOT members_hash, NOT anything from definitions).
  */
-export async function getAnyGeometryHashForKey(schoolId, catchmentKey) {
+async function getAnyGeometryHashForKey(schoolId, catchmentKey) {
   const { rows } = await db.query(
     `
     SELECT built_from_members_hash
@@ -58,7 +58,7 @@ export async function getAnyGeometryHashForKey(schoolId, catchmentKey) {
  * Fetch all cached geometries for a specific build hash
  * (individual + merged rows). This is what the map layer renders.
  */
-export async function getGeometriesByHash(schoolId, catchmentKey, builtHash) {
+async function getGeometriesByHash(schoolId, catchmentKey, builtHash) {
   const { rows } = await db.query(
     `
     SELECT
@@ -82,3 +82,10 @@ export async function getGeometriesByHash(schoolId, catchmentKey, builtHash) {
   );
   return rows;
 }
+
+module.exports = {
+  getSchoolById,
+  getActiveDefinitions,
+  getAnyGeometryHashForKey,
+  getGeometriesByHash,
+};

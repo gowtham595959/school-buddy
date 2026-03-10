@@ -1,7 +1,7 @@
 // server/src/domains/catchmentV2/rebuild.repo.js
-import db from "../../db.js";
+const db = require("../../db");
 
-export async function getDefinitionById(definitionId) {
+async function getDefinitionById(definitionId) {
   const { rows } = await db.query(
     `SELECT * FROM catchment_definitions WHERE id = $1`,
     [definitionId]
@@ -9,7 +9,7 @@ export async function getDefinitionById(definitionId) {
   return rows[0] || null;
 }
 
-export async function getDefinitionsBySchool(schoolId) {
+async function getDefinitionsBySchool(schoolId) {
   const { rows } = await db.query(
     `
     SELECT *
@@ -23,7 +23,7 @@ export async function getDefinitionsBySchool(schoolId) {
   return rows;
 }
 
-export async function updateDefinitionMembersAndHash(definitionId, normalizedMembers, membersHash) {
+async function updateDefinitionMembersAndHash(definitionId, normalizedMembers, membersHash) {
   // Store members as JSONB properly
   const membersJson = JSON.stringify(normalizedMembers);
 
@@ -38,7 +38,7 @@ export async function updateDefinitionMembersAndHash(definitionId, normalizedMem
   );
 }
 
-export async function markDefinitionBuilt(definitionId) {
+async function markDefinitionBuilt(definitionId) {
   await db.query(
     `
     UPDATE catchment_definitions
@@ -49,7 +49,7 @@ export async function markDefinitionBuilt(definitionId) {
   );
 }
 
-export async function deleteGeometriesForKey(schoolId, catchmentKey) {
+async function deleteGeometriesForKey(schoolId, catchmentKey) {
   await db.query(
     `
     DELETE FROM catchment_geometries
@@ -60,7 +60,7 @@ export async function deleteGeometriesForKey(schoolId, catchmentKey) {
   );
 }
 
-export async function insertIndividualRows({
+async function insertIndividualRows({
   schoolId,
   schoolName,
   catchmentKey,
@@ -82,7 +82,7 @@ export async function insertIndividualRows({
   }
 }
 
-export async function upsertMergedRow({
+async function upsertMergedRow({
   schoolId,
   schoolName,
   catchmentKey,
@@ -108,7 +108,7 @@ export async function upsertMergedRow({
  * Neutral lookup from canonical_geometries.
  * Returns member_code -> GeoJSON geometry (Polygon/MultiPolygon)
  */
-export async function fetchCanonicalGeoms(geographyType, memberCodes) {
+async function fetchCanonicalGeoms(geographyType, memberCodes) {
   const { rows } = await db.query(
     `
     SELECT member_code,
@@ -133,7 +133,7 @@ export async function fetchCanonicalGeoms(geographyType, memberCodes) {
  * - Uses both absolute + relative thresholds to work across all geography types
  * - Includes a safety fallback if too much area would be lost
  */
-export async function buildMergedGeometry(geographyType, memberCodes, opts = {}) {
+async function buildMergedGeometry(geographyType, memberCodes, opts = {}) {
   const minPartAreaM2 = Number(opts.minPartAreaM2 ?? process.env.CATCHMENT_MIN_PART_AREA_M2 ?? 10000);
   const minPartRel = Number(opts.minPartRel ?? process.env.CATCHMENT_MIN_PART_REL ?? 0.002);
   const minKeepAreaRatio = Number(opts.minKeepAreaRatio ?? process.env.CATCHMENT_MIN_KEEP_AREA_RATIO ?? 0.98);
@@ -218,3 +218,15 @@ export async function buildMergedGeometry(geographyType, memberCodes, opts = {})
 
   return cleaned;
 }
+
+module.exports = {
+  getDefinitionById,
+  getDefinitionsBySchool,
+  updateDefinitionMembersAndHash,
+  markDefinitionBuilt,
+  deleteGeometriesForKey,
+  insertIndividualRows,
+  upsertMergedRow,
+  fetchCanonicalGeoms,
+  buildMergedGeometry,
+};

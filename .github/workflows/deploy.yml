@@ -1,0 +1,259 @@
+# ============================================================
+# School Buddy — CI/CD Pipeline
+# Build → Push to ACR → Deploy to Azure Web App → Apply
+# App Settings → Restart
+#
+# Required GitHub Secrets (Settings → Secrets → Actions):
+#   AZURE_CLIENT_ID        — Service principal app ID
+#   AZURE_CLIENT_SECRET    — Service principal secret
+#   AZURE_TENANT_ID        — Azure AD tenant ID
+#   ACR_USERNAME           — ACR admin username (or SP client ID)
+#   ACR_PASSWORD           — ACR admin password (or SP client secret)
+#   POSTGRES_PASSWORD      — PostgreSQL superuser password
+#   GOOGLE_MAPS_API_KEY    — Google Maps Directions API key
+#
+# Non-secret configuration is read from .github/deploy.parameters.json
+# ============================================================
+
+name: Build, Push & Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force deploy even if no code changes"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      image_tag:
+        description: "Override image tag (leave blank to use git SHA)"
+        required: false
+        default: ""
+
+env:
+  PARAMS_FILE: .github/deploy.parameters.json
+
+jobs:
+  # ── Job 1: Build & Push Docker image to ACR ─────────────────
+  build-and-push:
+    name: Build & Push to ACR
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.image_tag }}
+      full_image: ${{ steps.set-tag.outputs.full_image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Read parameters file ────────────────────────────────
+      - name: Read deployment parameters
+        id: params
+        run: |
+          ACR_LOGIN_SERVER=$(jq -r '.acr.loginServer' ${{ env.PARAMS_FILE }})
+          ACR_REPOSITORY=$(jq -r '.acr.repository' ${{ env.PARAMS_FILE }})
+          TAG_STRATEGY=$(jq -r '.image.tagStrategy' ${{ env.PARAMS_FILE }})
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_repository=$ACR_REPOSITORY" >> $GITHUB_OUTPUT
+          echo "tag_strategy=$TAG_STRATEGY" >> $GITHUB_OUTPUT
+
+      # ── Determine image tag ─────────────────────────────────
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          elif [ "${{ steps.params.outputs.tag_strategy }}" = "sha" ]; then
+            TAG="${{ github.sha }}"
+            TAG="${TAG:0:8}"
+          else
+            TAG="latest"
+          fi
+
+          ACR="${{ steps.params.outputs.acr_login_server }}"
+          REPO="${{ steps.params.outputs.acr_repository }}"
+          FULL_IMAGE="${ACR}/${REPO}:${TAG}"
+
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "full_image=$FULL_IMAGE" >> $GITHUB_OUTPUT
+          echo "full_image_latest=${ACR}/${REPO}:latest" >> $GITHUB_OUTPUT
+
+          echo "==> Image: $FULL_IMAGE"
+
+      # ── Log in to Azure Container Registry ─────────────────
+      - name: Log in to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.params.outputs.acr_login_server }}
+          username: ${{ secrets.ACR_USERNAME_SCHOOL_BUDDY }}
+          password: ${{ secrets.ACR_PASSWORD_SCHOOL_BUDDY }}
+
+      # ── Set up Docker Buildx for layer caching ──────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Build and push image ────────────────────────────────
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.all-in-one
+          push: true
+          tags: |
+            ${{ steps.set-tag.outputs.full_image }}
+            ${{ steps.set-tag.outputs.full_image_latest }}
+          cache-from: type=registry,ref=${{ steps.params.outputs.acr_login_server }}/${{ steps.params.outputs.acr_repository }}:buildcache
+          cache-to: type=registry,ref=${{ steps.params.outputs.acr_login_server }}/${{ steps.params.outputs.acr_repository }}:buildcache,mode=max
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+
+      - name: Image build summary
+        run: |
+          echo "## Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ steps.set-tag.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Full ref:** \`${{ steps.set-tag.outputs.full_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── Job 2: Deploy to Azure Web App ──────────────────────────
+  deploy:
+    name: Deploy to Azure Web App
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Read parameters file ────────────────────────────────
+      - name: Read deployment parameters
+        id: params
+        run: |
+          ACR_LOGIN_SERVER=$(jq -r '.acr.loginServer' ${{ env.PARAMS_FILE }})
+          ACR_RESOURCE_GROUP=$(jq -r '.acr.resourceGroup' ${{ env.PARAMS_FILE }})
+          SUBSCRIPTION_ID=$(jq -r '.acr.subscriptionId' ${{ env.PARAMS_FILE }})
+          WEBAPP_NAME=$(jq -r '.webapp.name' ${{ env.PARAMS_FILE }})
+          WEBAPP_RG=$(jq -r '.webapp.resourceGroup' ${{ env.PARAMS_FILE }})
+
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_resource_group=$ACR_RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "subscription_id=$SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
+          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
+          echo "webapp_rg=$WEBAPP_RG" >> $GITHUB_OUTPUT
+
+      # ── Log in to Azure ─────────────────────────────────────
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ steps.params.outputs.subscription_id }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
+      # ── Update Web App container to use new ACR image ───────
+      - name: Update Web App container image
+        run: |
+          az webapp config container set \
+            --name ${{ steps.params.outputs.webapp_name }} \
+            --resource-group ${{ steps.params.outputs.webapp_rg }} \
+            --container-image-name ${{ needs.build-and-push.outputs.full_image }} \
+            --container-registry-url https://${{ steps.params.outputs.acr_login_server }} \
+            --container-registry-user ${{ secrets.ACR_USERNAME_SCHOOL_BUDDY }} \
+            --container-registry-password ${{ secrets.ACR_PASSWORD_SCHOOL_BUDDY }}
+
+      # ── Apply app settings from parameters file + secrets ───
+      - name: Apply app settings
+        run: |
+          # Build key=value pairs from the appSettings block in parameters file
+          SETTINGS=$(jq -r '
+            .appSettings
+            | to_entries[]
+            | select(.key | startswith("_") | not)
+            | "\(.key)=\(.value)"
+          ' ${{ env.PARAMS_FILE }})
+
+          # Append secret values that are not stored in the parameters file
+          SETTINGS="$SETTINGS
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_SCHOOL_BUDDY }}
+          GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}"
+
+          # Convert to array for az cli (each setting as separate argument)
+          SETTINGS_ARGS=""
+          while IFS= read -r setting; do
+            trimmed=$(echo "$setting" | xargs)
+            if [ -n "$trimmed" ]; then
+              SETTINGS_ARGS="$SETTINGS_ARGS \"$trimmed\""
+            fi
+          done <<< "$SETTINGS"
+
+          echo "==> Applying $(echo "$SETTINGS" | grep -c '=') app settings..."
+
+          eval az webapp config appsettings set \
+            --name ${{ steps.params.outputs.webapp_name }} \
+            --resource-group ${{ steps.params.outputs.webapp_rg }} \
+            --settings $SETTINGS_ARGS
+
+          echo "==> App settings applied."
+
+      # ── Restart the Web App ─────────────────────────────────
+      - name: Restart Web App
+        run: |
+          echo "==> Restarting ${{ steps.params.outputs.webapp_name }}..."
+          az webapp restart \
+            --name ${{ steps.params.outputs.webapp_name }} \
+            --resource-group ${{ steps.params.outputs.webapp_rg }}
+          echo "==> Restart command issued."
+
+      # ── Wait for the app to come back up ────────────────────
+      - name: Wait for health check
+        run: |
+          WEBAPP_NAME="${{ steps.params.outputs.webapp_name }}"
+          HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health"
+          MAX_ATTEMPTS=20
+          SLEEP_SECONDS=15
+
+          echo "==> Polling $HEALTH_URL (max ${MAX_ATTEMPTS} attempts, ${SLEEP_SECONDS}s apart)..."
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            echo "  Attempt $i/$MAX_ATTEMPTS — HTTP $HTTP_STATUS"
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "==> Health check passed!"
+              break
+            fi
+
+            if [ "$i" -eq "$MAX_ATTEMPTS" ]; then
+              echo "::warning::Health check did not return 200 after $MAX_ATTEMPTS attempts. The app may still be starting — check Azure portal."
+              exit 0
+            fi
+
+            sleep $SLEEP_SECONDS
+          done
+
+      # ── Deployment summary ──────────────────────────────────
+      - name: Deployment summary
+        run: |
+          WEBAPP_NAME="${{ steps.params.outputs.webapp_name }}"
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web App:** \`${WEBAPP_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image deployed:** \`${{ needs.build-and-push.outputs.full_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** https://${WEBAPP_NAME}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # ── Azure logout ────────────────────────────────────────
+      - name: Azure logout
+        if: always()
+        run: az logout

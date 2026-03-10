@@ -1,12 +1,12 @@
 // server/src/domains/catchmentV2/catchmentV2.service.js
-import {
+const {
   getSchoolById,
   getActiveDefinitions,
   getGeometriesByHash,
   getAnyGeometryHashForKey,
-} from "./catchmentV2.repo.js";
+} = require("./catchmentV2.repo");
 
-import { GEOMETRY_KIND, GEOMETRY_STATUS } from "./catchmentV2.types.js";
+const { GEOMETRY_KIND, GEOMETRY_STATUS } = require("./catchmentV2.types");
 
 function safeJson(value, fallback) {
   if (value == null) return fallback;
@@ -23,7 +23,7 @@ function safeJson(value, fallback) {
  *    - stale  => geometry exists for this key, but for a different hash
  *    - missing=> no geometry exists at all for this key
  */
-export async function getCatchmentsV2ForSchool(schoolId) {
+async function getCatchmentsV2ForSchool(schoolId) {
   const school = await getSchoolById(schoolId);
   if (!school) {
     return {
@@ -131,3 +131,5 @@ export async function getCatchmentsV2ForSchool(schoolId) {
     definitions: enriched,
   };
 }
+
+module.exports = { getCatchmentsV2ForSchool };

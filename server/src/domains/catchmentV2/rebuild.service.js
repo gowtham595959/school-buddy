@@ -1,8 +1,8 @@
 // server/src/domains/catchmentV2/rebuild.service.js
-import crypto from "crypto";
-import db from "../../db.js";
+const crypto = require("crypto");
+const db = require("../../db");
 
-import {
+const {
   getDefinitionById,
   getDefinitionsBySchool,
   updateDefinitionMembersAndHash,
@@ -12,7 +12,7 @@ import {
   markDefinitionBuilt,
   fetchCanonicalGeoms,
   buildMergedGeometry,
-} from "./rebuild.repo.js";
+} = require("./rebuild.repo");
 
 function normalizeMember(geographyType, raw) {
   const s = String(raw ?? "").trim();
@@ -47,7 +47,7 @@ function toFeatureCollectionFromGeometry(geometry, properties = {}) {
   };
 }
 
-export async function rebuildCatchmentDefinition(definitionId) {
+async function rebuildCatchmentDefinition(definitionId) {
   const def = await getDefinitionById(definitionId);
   if (!def) throw new Error(`catchment_definition not found: ${definitionId}`);
 
@@ -162,7 +162,7 @@ export async function rebuildCatchmentDefinition(definitionId) {
     },
   };
 }
-export async function rebuildSchoolCatchments(schoolId, opts) {
+async function rebuildSchoolCatchments(schoolId, opts) {
   const safeOpts = opts && typeof opts === "object" ? opts : {};
 
   const defs = await getDefinitionsBySchool(schoolId);
@@ -181,3 +181,5 @@ export async function rebuildSchoolCatchments(schoolId, opts) {
     results,
   };
 }
+
+module.exports = { rebuildCatchmentDefinition, rebuildSchoolCatchments };

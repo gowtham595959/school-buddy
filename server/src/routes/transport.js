@@ -69,21 +69,7 @@ router.post("/", async (req, res) => {
       { key: "bicycling", google: "bicycling" },
     ];
 
-    const routes = [];
-
-    for (const mode of modes) {
-      const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
-
-      url.searchParams.set("origin", `${home_lat},${home_lon}`);
-      url.searchParams.set("destination", `${school.lat},${school.lon}`);
-      url.searchParams.set("mode", mode.google);
-      url.searchParams.set("departure_time", departureTime);
-      url.searchParams.set("alternatives", "true");
-      url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
-
-      const response = await fetch(url.toString());
-      const data = await response.json();
-
+    const parseMode = (mode, data) => {
       console.log(`🚌 Google Directions [${mode.key}] status:`, data.status);
 
       if (DEBUG_GOOGLE_RESPONSE && mode.key === "transit") {
@@ -93,7 +79,7 @@ router.post("/", async (req, res) => {
         );
       }
 
-      if (data.status !== "OK") continue;
+      if (data.status !== "OK") return null;
 
       const options = data.routes
         .slice(0, MAX_OPTIONS_PER_MODE)
@@ -135,7 +121,6 @@ router.post("/", async (req, res) => {
                     headsign: details.headsign ?? null,
                     num_stops: details.num_stops ?? null,
 
-                    // ✅ NEW (additive)
                     departure_time: details.departure_time
                       ? {
                           text: details.departure_time.text ?? null,
@@ -144,7 +129,6 @@ router.post("/", async (req, res) => {
                         }
                       : null,
 
-                    // ✅ NEW (additive)
                     arrival_time: details.arrival_time
                       ? {
                           text: details.arrival_time.text ?? null,
@@ -179,18 +163,36 @@ router.post("/", async (req, res) => {
         })
         .filter(Boolean);
 
-      if (options.length === 0) continue;
+      if (options.length === 0) return null;
 
       const primary = options[0];
-
-      routes.push({
+      return {
         mode: mode.key,
         duration_minutes: primary.duration_minutes,
         distance_km: primary.distance_km,
         polyline: primary.polyline,
         options,
-      });
-    }
+      };
+    };
+
+    // Fetch all 4 modes in parallel to stay well within the 10s serverless timeout
+    const results = await Promise.all(
+      modes.map(async (mode) => {
+        const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
+        url.searchParams.set("origin", `${home_lat},${home_lon}`);
+        url.searchParams.set("destination", `${school.lat},${school.lon}`);
+        url.searchParams.set("mode", mode.google);
+        url.searchParams.set("departure_time", departureTime);
+        url.searchParams.set("alternatives", "true");
+        url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
+
+        const response = await fetch(url.toString());
+        const data = await response.json();
+        return parseMode(mode, data);
+      })
+    );
+
+    const routes = results.filter(Boolean);
 
     res.json({
       school_id: school.id,

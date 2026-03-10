@@ -51,7 +51,7 @@ export default function SchoolListSection({
   scrollHeight,
   emptyText,
 }) {
-  const safeItems = Array.isArray(items) ? items : [];
+  const safeItems = useMemo(() => (Array.isArray(items) ? items : []), [items]);
   const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
   const initial = useMemo(() => {

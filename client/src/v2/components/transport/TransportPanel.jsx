@@ -108,10 +108,10 @@ export default function TransportPanel({
   // ✅ Determine available modes + default selection
   const availableModes = Object.keys(groupedRoutes);
   const activeMode = selectedMode || availableModes[0];
-  const activeOptions = groupedRoutes[activeMode] || [];
 
   // ✅ sort options shortest → longest (stable, minimal)
   const sortedActiveOptions = useMemo(() => {
+    const activeOptions = groupedRoutes[activeMode] || [];
     const list = Array.isArray(activeOptions) ? [...activeOptions] : [];
     list.sort((a, b) => {
       const da = Number(a?.duration_minutes);
@@ -137,7 +137,7 @@ export default function TransportPanel({
       return (a?.optionIndex ?? 0) - (b?.optionIndex ?? 0);
     });
     return list;
-  }, [activeOptions]);
+  }, [groupedRoutes, activeMode]);
 
   return (
     <div

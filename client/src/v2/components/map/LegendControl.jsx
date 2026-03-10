@@ -1,6 +1,5 @@
 import React from "react";
 import { useMap } from "react-leaflet";
-import L from "leaflet";
 
 export default function LegendControl({ open, onToggle }) {
   useMap(); // ensures within MapContainer

@@ -52,20 +52,19 @@ export default function LeftPanel({
   onLeaveOptionsList,
   onClearRoute,
 }) {
-  const safeAllSchools = Array.isArray(allSchools)
-    ? allSchools
-    : Array.isArray(schoolsNear)
-    ? schoolsNear
-    : Array.isArray(inCatchmentSchools)
-    ? inCatchmentSchools
-    : [];
-
-  const safeCatchmentMap = catchmentCheckBySchoolId || {};
   const homeLat = Number(homeLocation?.lat);
   const homeLon = Number(homeLocation?.lon);
 
   const { topItems, middleItems, bottomItems } = useMemo(() => {
-    const schools = safeAllSchools;
+    const safeAllSchools = Array.isArray(allSchools)
+      ? allSchools
+      : Array.isArray(schoolsNear)
+      ? schoolsNear
+      : Array.isArray(inCatchmentSchools)
+      ? inCatchmentSchools
+      : [];
+
+    const safeCatchmentMap = catchmentCheckBySchoolId || {};
 
     const withDist = (arr) =>
       arr
@@ -76,7 +75,7 @@ export default function LeftPanel({
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
 
-    const topRaw = schools.filter((s) => {
+    const topRaw = safeAllSchools.filter((s) => {
       const check = safeCatchmentMap?.[s.id];
       if (!check?.inCatchment) return false;
       return cat(s) !== "open";
@@ -84,7 +83,7 @@ export default function LeftPanel({
     const top = withDist(topRaw);
     const topIds = new Set(top.map((s) => s.id));
 
-    const middleRaw = schools.filter((s) => {
+    const middleRaw = safeAllSchools.filter((s) => {
       if (topIds.has(s.id)) return false;
       const c = cat(s);
       return c === "open" || c === "both";
@@ -92,13 +91,13 @@ export default function LeftPanel({
     const middle = withDist(middleRaw);
     const middleIds = new Set(middle.map((s) => s.id));
 
-    const bottomRaw = schools.filter(
+    const bottomRaw = safeAllSchools.filter(
       (s) => !topIds.has(s.id) && !middleIds.has(s.id)
     );
     const bottom = withDist(bottomRaw);
 
     return { topItems: top, middleItems: middle, bottomItems: bottom };
-  }, [safeAllSchools, safeCatchmentMap, homeLat, homeLon]);
+  }, [allSchools, schoolsNear, inCatchmentSchools, catchmentCheckBySchoolId, homeLat, homeLon]);
 
   return (
     <div className="v2-left-panel">
