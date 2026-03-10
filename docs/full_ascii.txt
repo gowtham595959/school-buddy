@@ -1,0 +1,246 @@
+====================================================================================================
+                                   SCHOOL BUDDY – FULL SYSTEM FLOW
+====================================================================================================
+
+                                        USER OPENS APPLICATION
+                                                  │
+                                                  ▼
+====================================================================================================
+                                           FRONTEND (React)
+====================================================================================================
+
+npm start
+   │
+   ▼
+create-react-app dev server
+   │
+   ▼
+Browser opens http://localhost:3000
+   │
+   ▼
+index.html
+   │
+   ▼
+index.js
+   │  └── ReactDOM.render(<App />)
+   ▼
+App.js
+   │
+   ├── useEffect → fetch("/api/schools")
+   │         │
+   │         ▼
+   │    Backend returns school list
+   │    App saves it → setSchools()
+   │
+   ├── Renders:
+   │      - Header (logo)
+   │      - Sidebar (dropdown)
+   │      - <MapView schools={} selectedSchools={} />
+   │
+   └── User selects a school
+           │
+           ▼
+      onChange() → setSelected([...])
+           │
+           ▼
+      App re-renders → MapView called again
+
+
+====================================================================================================
+                         SUBFLOW: FRONTEND MAP (MapView.jsx)
+====================================================================================================
+
+MapView receives:
+   - schools
+   - selectedSchools
+
+       │
+       ├── useMemo → filter visible schools
+       │
+       └── useEffect → IF Tiffin is selected:
+                        fetch("/api/schools/catchment/tiffin")
+
+                           │
+                           ▼
+                       Backend returns:
+                           {
+                             merged: {...},
+                             postcodes: {...}
+                           }
+
+MapView draws with React-Leaflet:
+   - <MapContainer>  → map area
+   - <TileLayer>     → OpenStreetMap background
+   - <Marker>        → Home + School markers
+   - <Circle>        → Radius catchments (Wallington, Nonsuch)
+   - <GeoJSON>       → Tiffin polygons
+
+Map displays final output.
+
+====================================================================================================
+                                       BACKEND (Node + Express)
+====================================================================================================
+
+npm run dev
+   │
+   ▼
+package.json → "dev": "nodemon src/index.js"
+   │
+   ▼
+nodemon starts backend
+   │
+   ▼
+index.js
+   │
+   ├── express() app created
+   ├── middleware:
+   │       - cors()
+   │       - express.json()
+   │
+   ├── routes mounted:
+   │       /api/schools                 → schools.js
+   │       /api/schools/catchment/tiffin → tiffin.js
+   │
+   ├── health check: GET /
+   │
+   └── app.listen(PORT)
+
+Server now listening on:
+   http://localhost:5000
+
+
+====================================================================================================
+                              SUBFLOW: /api/schools  (schools.js)
+====================================================================================================
+
+User visits the site → App.js calls:
+
+   GET /api/schools
+
+schools.js:
+   │
+   ├── loads db.js → gets Postgres connection
+   │
+   ├── SQL:
+   │     SELECT id, name, lat, lon AS lng, radius_m,
+   │            catchment_geojson, postcode_geojson
+   │     FROM schools
+   │
+   └── sends JSON list back to frontend
+
+App.js receives school list → displays in dropdown and MapView.
+
+
+====================================================================================================
+                        SUBFLOW: /api/schools/catchment/tiffin (tiffin.js)
+====================================================================================================
+
+MapView fetches:
+   GET /api/schools/catchment/tiffin
+
+tiffin.js:
+   │
+   ├── File paths resolved:
+   │      gis/tiffin_boundary.geojson
+   │      gis/tiffin_individual.geojson
+   │
+   ├── Check if files exist
+   │
+   ├── Read files:
+   │      boundary = JSON.parse(...)
+   │      postcodes = JSON.parse(...)
+   │
+   └── Sends JSON:
+          {
+            merged: boundary,
+            postcodes: postcodes
+          }
+
+MapView receives → draws GeoJSON polygons.
+
+
+====================================================================================================
+                                     DATABASE LAYER (PostGIS)
+====================================================================================================
+
+PostgreSQL + PostGIS stores:
+
+   TABLE: schools
+      id
+      name
+      lat
+      lon
+      radius_m
+      catchment_geojson     (optional)
+      postcode_geojson      (optional)
+
+   TABLE: postcodes
+      code (KT2, SM3, TW9...)
+      geom  (PostGIS MultiPolygon)
+
+   TABLE: catchments
+      school
+      geom (merged catchment polygon)
+
+
+GIS operations inside PostGIS:
+   ✔ ST_Union()      → merges many postcode polygons (for Tiffin)
+   ✔ ST_AsGeoJSON()  → convert shapes for backend use
+   ✔ geometry(...)   → stores actual polygons
+
+
+====================================================================================================
+                           GIS DATA SOURCES (Raw GeoJSON + Python Scripts)
+====================================================================================================
+
+gis/postcode_geojson/
+   ├── KT.geojson
+   ├── SW.geojson
+   ├── TW.geojson
+   ├── SM.geojson
+   └── ...
+
+Python scripts process these:
+
+1) load_postcodes.py
+   - Reads each postcode .geojson
+   - Inserts polygons into PostGIS table `postcodes`
+
+2) load_tiffin_postcodes.py
+   - Selects postcodes that belong to Tiffin
+   - Sends them to Tiffin processing
+
+3) build_tiffin_catchment.py  OR build_tiffin.js
+   - Uses ST_Union() or Shapely/Turf.js
+   - Produces:
+        gis/tiffin_boundary.geojson
+        gis/tiffin_individual.geojson
+
+Backend uses these files to serve catchments.
+
+
+====================================================================================================
+                           FULL REQUEST FLOW (PUTTING IT ALL TOGETHER)
+====================================================================================================
+
+1️⃣ User opens site → React loads
+
+2️⃣ App.js → fetch("/api/schools")
+       Backend → SQL → DB returns → frontend displays school list
+
+3️⃣ User selects “Tiffin Girls' School”
+
+4️⃣ MapView → fetch("/api/schools/catchment/tiffin")
+       Backend → reads GIS GeoJSON files → sends polygons
+
+5️⃣ MapView draws:
+       - merged boundary
+       - individual postcode shapes
+       - labels
+
+6️⃣ User sees catchment map fully rendered.
+
+
+====================================================================================================
+                                           END OF SYSTEM
+====================================================================================================

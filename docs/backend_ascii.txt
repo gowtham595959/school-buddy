@@ -1,0 +1,145 @@
+================================================================================
+                           BACKEND STARTUP (npm run dev)
+================================================================================
+
+npm run dev
+   │
+   ▼
+package.json
+   -> "dev": "nodemon src/index.js"
+
+   │
+   ▼
+nodemon starts watching files
+   -> runs: node src/index.js
+
+   │
+   ▼
+================================================================================
+A) index.js (MAIN ENTRY)
+================================================================================
+
+server/src/index.js does:
+
+   1️⃣ Load dependencies:
+       - express
+       - cors
+       - path
+       - schoolsRouter
+       - tiffinRouter
+
+   2️⃣ Create Express app:
+       const app = express();
+
+   3️⃣ Apply middleware:
+       app.use(cors());
+       app.use(express.json());
+
+   4️⃣ Mount routers:
+       app.use("/api/schools", schoolsRouter);
+       app.use("/api/schools/catchment/tiffin", tiffinRouter);
+
+   5️⃣ Health check:
+       GET /  →  "API running"
+
+   6️⃣ Error handler:
+       app.use((err, req, res, next) => {...})
+
+   7️⃣ Start server:
+       app.listen(PORT);
+
+index.js is now READY to accept incoming requests
+
+   │
+   ├───────────────────────────────────────────────────────────────┐
+   ▼                                                               │
+================================================================================
+B) schools.js LOADED (when index.js mounts /api/schools)
+================================================================================
+
+server/src/routes/schools.js does:
+
+   1️⃣ Load DB pool:
+        const pool = require("../db");
+
+        ↓
+        loads db.js
+
+   2️⃣ Define route:
+        router.get("/", async (req, res) => {
+           const result = await pool.query("SELECT ... FROM schools");
+           res.json(result.rows);
+        });
+
+   3️⃣ Export router for index.js
+
+   │
+   └───────────────────────────────────────────────────────────────┐
+                                                                    │
+                                                                    ▼
+================================================================================
+C) db.js LOADED (only when schools.js or other routes import it)
+================================================================================
+
+server/src/db.js does:
+
+   1️⃣ Load dotenv + pg:
+       require("dotenv")
+       const { Pool } = require("pg");
+
+   2️⃣ Load .env:
+       dotenv.config()
+
+   3️⃣ Read:
+       DATABASE_URL=...
+
+   4️⃣ Create Postgres pool:
+       const pool = new Pool({ connectionString })
+
+   5️⃣ Export pool:
+       module.exports = pool;
+
+Now routes can run:
+    pool.query("SELECT * FROM ...")
+
+   │
+   └───────────────────────────────────────────────────────────────┐
+                                                                    │
+                                                                    ▼
+================================================================================
+D) tiffin.js LOADED (when index.js mounts /api/schools/catchment/tiffin)
+================================================================================
+
+server/src/routes/tiffin.js does:
+
+   1️⃣ Load:
+        express, fs, path
+
+   2️⃣ Compute file paths:
+        gis/tiffin_boundary.geojson
+        gis/tiffin_individual.geojson
+
+   3️⃣ Define route:
+        router.get("/", (req,res)=> { 
+            - check files exist
+            - read boundary + postcode files
+            - return:
+                { merged: {...}, postcodes: {...} }
+        })
+
+   4️⃣ Export router
+
+================================================================================
+E) SERVER READY AND RUNNING
+================================================================================
+
+index.js is listening…
+schools.js is ready for /api/schools
+tiffin.js is ready for /api/schools/catchment/tiffin
+db.js is connected to PostGIS database
+
+All backend endpoints now work.
+
+================================================================================
+                                    END
+================================================================================

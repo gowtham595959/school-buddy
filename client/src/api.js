@@ -1,13 +1,18 @@
 // client/src/api.js
-import axios from 'axios';
+// LEGACY shared API helpers
+// NOTE: This file is kept intentionally for backward compatibility.
+// New feature work should use domain APIs instead (see client/src/domains/*).
 
-// 👇 No REACT_APP_API_URL, no hard-coded Codespaces URL
-// CRA dev server will proxy `/api` to backend
-const API_BASE = '/api';
+const API_BASE = "/api";
 
-console.log("API BASE =", API_BASE);
+export async function fetchSchools() {
+  const res = await fetch(`${API_BASE}/schools`);
+  return res.json();
+}
 
-export const fetchSchools = async () => {
-  const res = await axios.get(`${API_BASE}/schools`);
-  return res.data;
-};
+export async function fetchCatchments(schoolId) {
+  const res = await fetch(`${API_BASE}/catchments/${schoolId}`);
+  return res.json();
+}
+
+

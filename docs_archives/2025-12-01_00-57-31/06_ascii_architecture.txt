@@ -1,0 +1,91 @@
+Architecture Snapshot — 2025-12-01_00-57-31
+=================================
+
+NOTE: This diagram is generated from the *actual* codebase:
+- Frontend entry, main App component
+- Components that call /api/...
+- Backend Express app + routers
+- GIS GeoJSON assets
+
+--------------------------------------------------------------------------------
+FRONTEND (React)
+--------------------------------------------------------------------------------
+
+  Entry file:
+    client/src/index.js
+
+  Main App component:
+    /workspaces/school-buddy/client/src/App.js
+
+  Components / files that call /api/...:
+    - client/src/App.js
+    - client/src/MapView.jsx
+
+--------------------------------------------------------------------------------
+BACKEND (Express + Node)
+--------------------------------------------------------------------------------
+
+  Express entry:
+    server/src/index.js
+
+  app.use(...) wiring (from index.js):
+
+        32	app.use(cors());
+        35	app.use(express.json());
+        43	app.use("/api/schools/catchment/tiffin", tiffinRouter);
+        47	app.use("/api/schools", schoolsRouter);
+        57	app.use((err, req, res, next) => {
+
+  Router files under server/src/routes:
+    catchment.js,schools.js,tiffin.js,
+
+--------------------------------------------------------------------------------
+DATABASE (PostgreSQL, best-effort)
+--------------------------------------------------------------------------------
+
+  - Connection via server/.env → DATABASE_URL (if set)
+  - Detailed schema in: 04_db_schema.md
+
+--------------------------------------------------------------------------------
+GIS LAYER (GeoJSON)
+--------------------------------------------------------------------------------
+
+  Files under gis/:
+    tiffin_boundary.geojson, tiffin_individual.geojson
+
+--------------------------------------------------------------------------------
+HIGH-LEVEL FLOW
+--------------------------------------------------------------------------------
+
+                 ┌──────────────────────────────┐
+                 │         FRONTEND (React)     │
+                 │  client/src/index.js│
+                 └───────────────┬──────────────┘
+                                 │ renders
+                                 ▼
+                     ┌──────────────────────┐
+                     │       App.jsx        │
+                     │  (and pages/views)   │
+                     └───────────────┬──────┘
+                                     │ calls
+                                     ▼
+                   (Components listed under "calls /api")
+                                     │
+                                     ▼
+               ┌────────────────────────────────────────┐
+               │             BACKEND (Express)          │
+               │          server/src/index.js           │
+               └─────┬───────────────────────┬─────────┘
+                     │                       │
+                     ▼                       ▼
+         ┌───────────────────┐      ┌───────────────────────┐
+         │ routes/schools.js │      │ routes/tiffin.js      │
+         │  /api/schools     │      │ /api/schools/...      │
+         └───────────────┬───┘      └───────────────┬──────┘
+                         │                          │
+                         ▼                          ▼
+         ┌─────────────────────────┐   ┌─────────────────────────┐
+         │ PostgreSQL (schoolmap) │   │ gis/*.geojson           │
+         │ tables: schools, ...   │   │ tiffin_boundary, ...    │
+         └─────────────────────────┘   └─────────────────────────┘
+

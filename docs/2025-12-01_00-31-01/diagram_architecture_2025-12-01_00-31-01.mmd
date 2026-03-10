@@ -1,0 +1,8 @@
+flowchart TD
+    React[Frontend - React] -->|Fetches JSON| Express[Backend - Express API]
+    Express -->|Queries| Postgres[(PostgreSQL)]
+    Express -->|Reads Files| GIS[(GeoJSON Files)]
+
+    GIS --> Leaflet[Leaflet Map Renderer]
+    Postgres --> Leaflet
+    Express --> Leaflet

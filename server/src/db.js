@@ -1,16 +1,5 @@
 // server/src/db.js
+// Compatibility shim: existing code imports "../db" or "../../db".
+// This keeps those imports working while the real implementation lives in ./db/pool.js.
 
-const { Pool } = require('pg');
-require('dotenv').config();
-
-// Create a connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-// Immediately attempt a connection
-pool.connect()
-  .then(() => console.log("✅ Connected to DB..."))
-  .catch(err => console.error("❌ DB connection error:", err));
-
-module.exports = pool;
+module.exports = require("./db/pool");

@@ -1,0 +1,3 @@
+"id","name","lat","lon","location","icon_url","display_name","website","phone","email","address","description","show_radius","show_polygon","radius_km","catchment_type"
+2,"Nonsuch High School for Girls",51.355417,-0.223868,"0101000020E6100000927A4FE5B4A7CCBFA2B8E34D7EAD4940","/icons/School_red.png","","","","","","",1,"","5.25","radius"
+3,"Wallington High School for Girls",51.348,-0.1488,"0101000020E6100000CE88D2DEE00BC3BF068195438BAC4940","/icons/school_black.png","","","","","","",1,"","6.70","radius"

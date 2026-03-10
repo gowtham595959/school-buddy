@@ -1,0 +1,920 @@
+==============================================
+DATABASE: schoolmap
+GENERATED: 15-Feb_21_18
+TOTAL TABLES: 31
+==============================================
+
+========== TABLE SUMMARY ==========
+
+----------------------------------------------
+TABLE: public.canonical_geometries
+ROW COUNT: 33905
+COLUMN COUNT: 9
+TABLE SIZE KB: 302008
+COLUMNS: id(bigint), geography_type(text), member_code(text), name(text), geom(USER-DEFINED), geojson(jsonb), source(text), dataset_version(text), updated_at(timestamp with time zone)
+
+
+----------------------------------------------
+TABLE: public.catchment_definitions
+ROW COUNT: 7
+COLUMN COUNT: 17
+TABLE SIZE KB: 112
+COLUMNS: id(bigint), school_id(bigint), school_name(text), catchment_priority(integer), catchment_key(text), catchment_year(integer), catchment_alloc_seats(integer), catchment_active(boolean), geography_type(text), radius(numeric), radius_unit(text), members(jsonb), members_hash(text), geojson_built_at(timestamp with time zone), style(jsonb), updated_at(timestamp with time zone), members_display(jsonb)
+
+
+----------------------------------------------
+TABLE: public.catchment_geometries
+ROW COUNT: 76
+COLUMN COUNT: 9
+TABLE SIZE KB: 1136
+COLUMNS: id(bigint), school_id(bigint), school_name(text), catchment_key(text), geometry_kind(text), member_code(text), built_from_members_hash(text), geojson(jsonb), updated_at(timestamp with time zone)
+
+
+----------------------------------------------
+TABLE: public.catchment_styles
+ROW COUNT: 2
+COLUMN COUNT: 13
+TABLE SIZE KB: 32
+COLUMNS: school_id(integer), type(character varying), fill_color(character varying), border_color(character varying), opacity(numeric), layer_type(text), geometry_mode(text), year(integer), stroke_color(text), stroke_weight(integer), stroke_opacity(numeric), fill_opacity(numeric), created_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.catchment_styles_backup
+ROW COUNT: 2
+COLUMN COUNT: 13
+TABLE SIZE KB: 16
+COLUMNS: school_id(integer), type(character varying), fill_color(character varying), border_color(character varying), opacity(numeric), layer_type(text), geometry_mode(text), year(integer), stroke_color(text), stroke_weight(integer), stroke_opacity(numeric), fill_opacity(numeric), created_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.catchments
+ROW COUNT: 3
+COLUMN COUNT: 9
+TABLE SIZE KB: 288
+COLUMNS: id(integer), school_id(integer), type(text), boundary_geom(USER-DEFINED), boundary_geojson(jsonb), year(integer), active(boolean), created_at(timestamp without time zone), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.catchments_backup
+ROW COUNT: 3
+COLUMN COUNT: 9
+TABLE SIZE KB: 184
+COLUMNS: id(integer), school_id(integer), type(text), boundary_geom(USER-DEFINED), boundary_geojson(jsonb), year(integer), active(boolean), created_at(timestamp without time zone), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.deprecated_geojson_raw
+ROW COUNT: 1
+COLUMN COUNT: 1
+TABLE SIZE KB: 128
+COLUMNS: data(jsonb)
+
+
+----------------------------------------------
+TABLE: public.deprecated_old_catchments
+ROW COUNT: 2
+COLUMN COUNT: 3
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), radius_m(integer)
+
+
+----------------------------------------------
+TABLE: public.postcode_areas_tmp
+ROW COUNT: 44
+COLUMN COUNT: 2
+TABLE SIZE KB: 192
+COLUMNS: postcode_area(text), geom(USER-DEFINED)
+
+
+----------------------------------------------
+TABLE: public.school_inner_postcodes
+ROW COUNT: 44
+COLUMN COUNT: 2
+TABLE SIZE KB: 32
+COLUMNS: school_id(integer), postcode_area(text)
+
+
+----------------------------------------------
+TABLE: public.schools
+ROW COUNT: 5
+COLUMN COUNT: 40
+TABLE SIZE KB: 64
+COLUMNS: id(integer), name(text), lat(double precision), lon(double precision), location(USER-DEFINED), icon_url(text), display_name(text), website(text), phone(text), email(text), address(text), description(text), show_radius(boolean), show_polygon(boolean), radius_km(numeric), catchment_type(text), school_code(text), local_authority(text), school_type(text), gender_type(text), boarding_type(text), selectivity_type(text), phase(text), age_range(text), religious_affiliation(text), top_school(boolean), marker_style_key(text), has_catchment(boolean), has_transport(boolean), has_admissions(boolean), has_exams(boolean), has_results_gcse(boolean), has_results_alevel(boolean), has_inspection(boolean), has_subjects(boolean), has_allocations(boolean), has_oxbridge(boolean), catchment_category(character varying), council_name(text), council_borough_code(text)
+
+
+----------------------------------------------
+TABLE: public.schools_backup
+ROW COUNT: 3
+COLUMN COUNT: 37
+TABLE SIZE KB: 16
+COLUMNS: id(integer), name(text), lat(double precision), lon(double precision), location(USER-DEFINED), icon_url(text), display_name(text), website(text), phone(text), email(text), address(text), description(text), show_radius(boolean), show_polygon(boolean), radius_km(numeric), catchment_type(text), school_code(text), local_authority(text), school_type(text), gender_type(text), boarding_type(text), selectivity_type(text), phase(text), age_range(text), religious_affiliation(text), top_school(boolean), marker_style_key(text), has_catchment(boolean), has_transport(boolean), has_admissions(boolean), has_exams(boolean), has_results_gcse(boolean), has_results_alevel(boolean), has_inspection(boolean), has_subjects(boolean), has_allocations(boolean), has_oxbridge(boolean)
+
+
+----------------------------------------------
+TABLE: public.spatial_ref_sys
+ROW COUNT: 8500
+COLUMN COUNT: 5
+TABLE SIZE KB: 7144
+COLUMNS: srid(integer), auth_name(character varying), auth_srid(integer), srtext(character varying), proj4text(character varying)
+
+
+----------------------------------------------
+TABLE: public.user_settings
+ROW COUNT: 2
+COLUMN COUNT: 5
+TABLE SIZE KB: 32
+COLUMNS: id(integer), home_postcode(character varying), home_lat(numeric), home_lon(numeric), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.admission_exam_papers
+ROW COUNT: 0
+COLUMN COUNT: 9
+TABLE SIZE KB: 24
+COLUMNS: id(integer), admission_exam_id(integer), test_number(integer), subject(text), question_count(integer), duration_minutes(integer), negative_marking(boolean), question_type(text), test_date(date)
+
+
+----------------------------------------------
+TABLE: public.admission_exams
+ROW COUNT: 0
+COLUMN COUNT: 11
+TABLE SIZE KB: 16
+COLUMNS: id(integer), school_id(integer), year(integer), subjects(jsonb), stages(jsonb), exam_dates(jsonb), application_info(text), applicants(integer), score_distribution(jsonb), created_at(timestamp without time zone), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.admissions_allocation_history
+ROW COUNT: 0
+COLUMN COUNT: 8
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), entry_year(integer), on_time_apps(integer), first_pref_apps(integer), offers_total(integer), last_distance_offered_km(numeric), notes(text)
+
+
+----------------------------------------------
+TABLE: public.admissions_criteria
+ROW COUNT: 0
+COLUMN COUNT: 8
+TABLE SIZE KB: 24
+COLUMNS: id(integer), admissions_policy_id(integer), criterion_order(integer), criterion_type(text), seats_allocated(integer), min_score(numeric), catchment_set_type(text), notes(text)
+
+
+----------------------------------------------
+TABLE: public.admissions_policies
+ROW COUNT: 0
+COLUMN COUNT: 15
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), year(integer), oversubscription_criteria(jsonb), catchment_requirements(jsonb), key_dates(jsonb), notes(text), created_at(timestamp without time zone), updated_at(timestamp without time zone), entry_year(integer), year_group(integer), total_intake(integer), policy_url(text), summary(text), last_updated(date)
+
+
+----------------------------------------------
+TABLE: public.alevel_results
+ROW COUNT: 0
+COLUMN COUNT: 11
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), year(integer), rank(integer), results(jsonb), created_at(timestamp without time zone), updated_at(timestamp without time zone), metric_key(text), metric_value(text), source_url(text), notes(text)
+
+
+----------------------------------------------
+TABLE: public.deprecated_search_config
+ROW COUNT: 0
+COLUMN COUNT: 5
+TABLE SIZE KB: 16
+COLUMNS: id(integer), default_radius_m(numeric), enable_radius_search(boolean), enable_polygon_search(boolean), max_results(integer)
+
+
+----------------------------------------------
+TABLE: public.gcse_results
+ROW COUNT: 0
+COLUMN COUNT: 11
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), year(integer), rank(integer), results(jsonb), created_at(timestamp without time zone), updated_at(timestamp without time zone), metric_key(text), metric_value(text), source_url(text), notes(text)
+
+
+----------------------------------------------
+TABLE: public.inspections
+ROW COUNT: 0
+COLUMN COUNT: 12
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), inspection_date(date), inspector(text), rating(text), summary(text), report_url(text), created_at(timestamp without time zone), updated_at(timestamp without time zone), inspection_body(text), overall_grade(text), notes(text)
+
+
+----------------------------------------------
+TABLE: public.oxbridge_destinations
+ROW COUNT: 0
+COLUMN COUNT: 11
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), year(integer), oxford_offers(integer), cambridge_offers(integer), destination_list(jsonb), created_at(timestamp without time zone), updated_at(timestamp without time zone), metric_key(text), metric_value(text), source_url(text)
+
+
+----------------------------------------------
+TABLE: public.postcodes
+ROW COUNT: 0
+COLUMN COUNT: 3
+TABLE SIZE KB: 32
+COLUMNS: id(integer), code(text), geom(USER-DEFINED)
+
+
+----------------------------------------------
+TABLE: public.school_bus_routes
+ROW COUNT: 0
+COLUMN COUNT: 7
+TABLE SIZE KB: 16
+COLUMNS: id(integer), school_id(integer), route_name(text), stops(jsonb), timetable(jsonb), created_at(timestamp without time zone), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.school_subjects
+ROW COUNT: 0
+COLUMN COUNT: 6
+TABLE SIZE KB: 24
+COLUMNS: id(integer), school_id(integer), subject_group(text), subject_name(text), is_offered(boolean), notes(text)
+
+
+----------------------------------------------
+TABLE: public.transport_data
+ROW COUNT: 0
+COLUMN COUNT: 7
+TABLE SIZE KB: 16
+COLUMNS: id(integer), school_id(integer), mode(text), time_minutes(integer), via(jsonb), data_source(text), updated_at(timestamp without time zone)
+
+
+----------------------------------------------
+TABLE: public.transport_profiles
+ROW COUNT: 0
+COLUMN COUNT: 5
+TABLE SIZE KB: 16
+COLUMNS: school_id(integer), enable_google_routes(boolean), school_day_departure_time(time without time zone), school_day_arrival_time(time without time zone), notes(text)
+
+
+----------------------------------------------
+TABLE: public.user_profile
+ROW COUNT: 0
+COLUMN COUNT: 4
+TABLE SIZE KB: 16
+COLUMNS: id(integer), home_postcode(text), home_lat(double precision), home_lon(double precision)
+
+
+
+==============================================
+FULL TABLE DATA
+==============================================
+
+##############################################
+DATA: public.canonical_geometries
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+  id   | geography_type | member_code |                name                 |          source           | dataset_version |          updated_at           |    geom_type    | geom_points | area_km2 | geojson_bytes 
+-------+----------------+-------------+-------------------------------------+---------------------------+-----------------+-------------------------------+-----------------+-------------+----------+---------------
+ 33544 | borough        | E06000001   | Hartlepool                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         453 |   93.941 |              
+ 33545 | borough        | E06000002   | Middlesbrough                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         253 |   53.895 |              
+ 33546 | borough        | E06000003   | Redcar and Cleveland                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         403 |  245.334 |              
+ 33547 | borough        | E06000004   | Stockton-on-Tees                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         811 |  205.064 |              
+ 33548 | borough        | E06000005   | Darlington                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         484 |  197.647 |              
+ 33549 | borough        | E06000006   | Halton                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         331 |   79.144 |              
+ 33550 | borough        | E06000007   | Warrington                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         556 |  180.751 |              
+ 33551 | borough        | E06000008   | Blackburn with Darwen               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         345 |  137.161 |              
+ 33552 | borough        | E06000009   | Blackpool                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         140 |   34.906 |              
+ 33553 | borough        | E06000010   | Kingston upon Hull, City of         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         325 |   71.639 |              
+ 33554 | borough        | E06000011   | East Riding of Yorkshire            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1814 | 2406.109 |              
+ 33555 | borough        | E06000012   | North East Lincolnshire             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         451 |  192.787 |              
+ 33556 | borough        | E06000013   | North Lincolnshire                  | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         801 |  846.975 |              
+ 33557 | borough        | E06000014   | York                                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         462 |  272.100 |              
+ 33558 | borough        | E06000015   | Derby                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         247 |   78.079 |              
+ 33559 | borough        | E06000016   | Leicester                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         268 |   73.419 |              
+ 33560 | borough        | E06000017   | Rutland                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         833 |  393.936 |              
+ 33561 | borough        | E06000018   | Nottingham                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         253 |   74.666 |              
+ 33562 | borough        | E06000019   | Herefordshire, County of            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1926 | 2181.128 |              
+ 33563 | borough        | E06000020   | Telford and Wrekin                  | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         656 |  290.496 |              
+ 33564 | borough        | E06000021   | Stoke-on-Trent                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         357 |   93.454 |              
+ 33565 | borough        | E06000022   | Bath and North East Somerset        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         856 |  351.454 |              
+ 33566 | borough        | E06000023   | Bristol, City of                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         509 |  109.692 |              
+ 33567 | borough        | E06000024   | North Somerset                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1005 |  374.947 |              
+ 33568 | borough        | E06000025   | South Gloucestershire               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         767 |  497.369 |              
+ 33569 | borough        | E06000026   | Plymouth                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         727 |   79.850 |              
+ 33570 | borough        | E06000027   | Torbay                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         782 |   62.949 |              
+ 33571 | borough        | E06000030   | Swindon                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         606 |  230.232 |              
+ 33572 | borough        | E06000031   | Peterborough                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         445 |  343.583 |              
+ 33573 | borough        | E06000032   | Luton                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         112 |   43.385 |              
+ 33574 | borough        | E06000033   | Southend-on-Sea                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         442 |   41.649 |              
+ 33575 | borough        | E06000034   | Thurrock                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         828 |  163.765 |              
+ 33576 | borough        | E06000035   | Medway                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2212 |  193.611 |              
+ 33577 | borough        | E06000036   | Bracknell Forest                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         180 |  109.386 |              
+ 33578 | borough        | E06000037   | West Berkshire                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         770 |  704.648 |              
+ 33579 | borough        | E06000038   | Reading                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         219 |   40.409 |              
+ 33580 | borough        | E06000039   | Slough                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         196 |   32.558 |              
+ 33581 | borough        | E06000040   | Windsor and Maidenhead              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         400 |  198.497 |              
+ 33582 | borough        | E06000041   | Wokingham                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         366 |  179.097 |              
+ 33583 | borough        | E06000042   | Milton Keynes                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         472 |  308.845 |              
+ 33584 | borough        | E06000043   | Brighton and Hove                   | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         244 |   82.883 |              
+ 33585 | borough        | E06000044   | Portsmouth                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         492 |   40.408 |              
+ 33586 | borough        | E06000045   | Southampton                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         371 |   49.884 |              
+ 33587 | borough        | E06000046   | Isle of Wight                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1641 |  379.938 |              
+ 33588 | borough        | E06000047   | County Durham                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1443 | 2232.554 |              
+ 33589 | borough        | E06000049   | Cheshire East                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1877 | 1167.134 |              
+ 33590 | borough        | E06000050   | Cheshire West and Chester           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2225 |  920.556 |              
+ 33591 | borough        | E06000051   | Shropshire                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3329 | 3199.513 |              
+ 33592 | borough        | E06000052   | Cornwall                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |       13167 | 3547.899 |              
+ 33593 | borough        | E06000053   | Isles of Scilly                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1288 |   16.318 |              
+ 33594 | borough        | E06000054   | Wiltshire                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1684 | 3257.819 |              
+ 33595 | borough        | E06000055   | Bedford                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         498 |  476.613 |              
+ 33596 | borough        | E06000056   | Central Bedfordshire                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         958 |  715.926 |              
+ 33597 | borough        | E06000057   | Northumberland                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3279 | 5036.097 |              
+ 33598 | borough        | E06000058   | Bournemouth, Christchurch and Poole | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1206 |  162.208 |              
+ 33599 | borough        | E06000059   | Dorset                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        4378 | 2492.760 |              
+ 33600 | borough        | E06000060   | Buckinghamshire                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1728 | 1565.915 |              
+ 33601 | borough        | E06000061   | North Northamptonshire              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1108 |  987.101 |              
+ 33602 | borough        | E06000062   | West Northamptonshire               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1580 | 1381.274 |              
+ 33603 | borough        | E06000063   | Cumberland                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        5315 | 3037.573 |              
+ 33604 | borough        | E06000064   | Westmorland and Furness             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3740 | 3792.042 |              
+ 33605 | borough        | E06000065   | North Yorkshire                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3721 | 8045.645 |              
+ 33606 | borough        | E06000066   | Somerset                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2649 | 3453.872 |              
+ 33607 | borough        | E07000008   | Cambridge                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         154 |   40.721 |              
+ 33608 | borough        | E07000009   | East Cambridgeshire                 | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         720 |  651.313 |              
+ 33609 | borough        | E07000010   | Fenland                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         483 |  546.641 |              
+ 33610 | borough        | E07000011   | Huntingdonshire                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         902 |  912.916 |              
+ 33611 | borough        | E07000012   | South Cambridgeshire                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         999 |  901.914 |              
+ 33612 | borough        | E07000032   | Amber Valley                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         684 |  265.608 |              
+ 33613 | borough        | E07000033   | Bolsover                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         507 |  160.455 |              
+ 33614 | borough        | E07000034   | Chesterfield                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         281 |   66.078 |              
+ 33615 | borough        | E07000035   | Derbyshire Dales                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1283 |  796.035 |              
+ 33616 | borough        | E07000036   | Erewash                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         432 |  109.709 |              
+ 33617 | borough        | E07000037   | High Peak                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         693 |  540.623 |              
+ 33618 | borough        | E07000038   | North East Derbyshire               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         873 |  275.850 |              
+ 33619 | borough        | E07000039   | South Derbyshire                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         982 |  338.331 |              
+ 33620 | borough        | E07000040   | East Devon                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1291 |  814.791 |              
+ 33621 | borough        | E07000041   | Exeter                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         340 |   47.070 |              
+ 33622 | borough        | E07000042   | Mid Devon                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1261 |  913.249 |              
+ 33623 | borough        | E07000043   | North Devon                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2392 | 1086.126 |              
+ 33624 | borough        | E07000044   | South Hams                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        4259 |  886.873 |              
+ 33625 | borough        | E07000045   | Teignbridge                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1142 |  673.986 |              
+ 33626 | borough        | E07000046   | Torridge                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2225 |  985.387 |              
+ 33627 | borough        | E07000047   | West Devon                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1424 | 1161.315 |              
+ 33628 | borough        | E07000061   | Eastbourne                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         171 |   44.187 |              
+ 33629 | borough        | E07000062   | Hastings                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         163 |   29.808 |              
+ 33630 | borough        | E07000063   | Lewes                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         967 |  292.215 |              
+ 33631 | borough        | E07000064   | Rother                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         969 |  511.772 |              
+ 33632 | borough        | E07000065   | Wealden                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1434 |  835.101 |              
+ 33633 | borough        | E07000066   | Basildon                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         606 |  109.974 |              
+ 33634 | borough        | E07000067   | Braintree                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         967 |  611.677 |              
+ 33635 | borough        | E07000068   | Brentwood                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         342 |  153.170 |              
+ 33636 | borough        | E07000069   | Castle Point                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1882 |   44.519 |              
+ 33637 | borough        | E07000070   | Chelmsford                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         764 |  342.244 |              
+ 33638 | borough        | E07000071   | Colchester                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2953 |  332.052 |              
+ 33639 | borough        | E07000072   | Epping Forest                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         570 |  339.043 |              
+ 33640 | borough        | E07000073   | Harlow                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         141 |   30.544 |              
+ 33641 | borough        | E07000074   | Maldon                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        4988 |  357.415 |              
+ 33642 | borough        | E07000075   | Rochford                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1777 |  166.880 |              
+ 33643 | borough        | E07000076   | Tendring                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        4623 |  336.042 |              
+ 33644 | borough        | E07000077   | Uttlesford                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         769 |  641.154 |              
+ 33645 | borough        | E07000078   | Cheltenham                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         191 |   46.606 |              
+ 33646 | borough        | E07000079   | Cotswold                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1615 | 1165.347 |              
+ 33647 | borough        | E07000080   | Forest of Dean                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         896 |  526.301 |              
+ 33648 | borough        | E07000081   | Gloucester                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         137 |   40.574 |              
+ 33649 | borough        | E07000082   | Stroud                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         905 |  460.952 |              
+ 33650 | borough        | E07000083   | Tewkesbury                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         909 |  414.692 |              
+ 33651 | borough        | E07000084   | Basingstoke and Deane               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         667 |  634.200 |              
+ 33652 | borough        | E07000085   | East Hampshire                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         645 |  514.743 |              
+ 33653 | borough        | E07000086   | Eastleigh                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         511 |   79.749 |              
+ 33654 | borough        | E07000087   | Fareham                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         448 |   74.295 |              
+ 33655 | borough        | E07000088   | Gosport                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         290 |   25.384 |              
+ 33656 | borough        | E07000089   | Hart                                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         387 |  215.387 |              
+ 33657 | borough        | E07000090   | Havant                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         923 |   55.772 |              
+ 33658 | borough        | E07000091   | New Forest                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2759 |  752.506 |              
+ 33659 | borough        | E07000092   | Rushmoor                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         198 |   39.074 |              
+ 33660 | borough        | E07000093   | Test Valley                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         886 |  628.108 |              
+ 33661 | borough        | E07000094   | Winchester                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         792 |  661.423 |              
+ 33662 | borough        | E07000095   | Broxbourne                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         144 |   51.491 |              
+ 33663 | borough        | E07000096   | Dacorum                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         437 |  212.532 |              
+ 33664 | borough        | E07000098   | Hertsmere                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         278 |  101.152 |              
+ 33665 | borough        | E07000099   | North Hertfordshire                 | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         735 |  375.490 |              
+ 33666 | borough        | E07000102   | Three Rivers                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         306 |   88.858 |              
+ 33667 | borough        | E07000103   | Watford                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         127 |   21.413 |              
+ 33668 | borough        | E07000105   | Ashford                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         706 |  580.486 |              
+ 33669 | borough        | E07000106   | Canterbury                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         649 |  308.635 |              
+ 33670 | borough        | E07000107   | Dartford                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         311 |   72.730 |              
+ 33671 | borough        | E07000108   | Dover                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         790 |  315.122 |              
+ 33672 | borough        | E07000109   | Gravesham                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         282 |   99.015 |              
+ 33673 | borough        | E07000110   | Maidstone                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         630 |  393.293 |              
+ 33674 | borough        | E07000111   | Sevenoaks                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         706 |  370.404 |              
+ 33675 | borough        | E07000112   | Folkestone and Hythe                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         578 |  356.856 |              
+ 33676 | borough        | E07000113   | Swale                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3205 |  373.162 |              
+ 33677 | borough        | E07000114   | Thanet                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         428 |  103.536 |              
+ 33678 | borough        | E07000115   | Tonbridge and Malling               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         753 |  240.135 |              
+ 33679 | borough        | E07000116   | Tunbridge Wells                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         987 |  331.283 |              
+ 33680 | borough        | E07000117   | Burnley                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         289 |  110.775 |              
+ 33681 | borough        | E07000118   | Chorley                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         705 |  202.820 |              
+ 33682 | borough        | E07000119   | Fylde                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1186 |  165.645 |              
+ 33683 | borough        | E07000120   | Hyndburn                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         202 |   73.021 |              
+ 33684 | borough        | E07000121   | Lancaster                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2911 |  567.187 |              
+ 33685 | borough        | E07000122   | Pendle                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         341 |  169.516 |              
+ 33686 | borough        | E07000123   | Preston                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         417 |  142.382 |              
+ 33687 | borough        | E07000124   | Ribble Valley                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         667 |  584.892 |              
+ 33688 | borough        | E07000125   | Rossendale                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         278 |  138.138 |              
+ 33689 | borough        | E07000126   | South Ribble                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         712 |  113.212 |              
+ 33690 | borough        | E07000127   | West Lancashire                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1790 |  346.719 |              
+ 33691 | borough        | E07000128   | Wyre                                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1494 |  282.387 |              
+ 33692 | borough        | E07000129   | Blaby                               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         546 |  130.584 |              
+ 33693 | borough        | E07000130   | Charnwood                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         573 |  279.201 |              
+ 33694 | borough        | E07000131   | Harborough                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1211 |  593.088 |              
+ 33695 | borough        | E07000132   | Hinckley and Bosworth               | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         531 |  297.569 |              
+ 33696 | borough        | E07000133   | Melton                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         703 |  481.644 |              
+ 33697 | borough        | E07000134   | North West Leicestershire           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         609 |  279.537 |              
+ 33698 | borough        | E07000135   | Oadby and Wigston                   | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         197 |   23.535 |              
+ 33699 | borough        | E07000136   | Boston                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        4580 |  363.596 |              
+ 33700 | borough        | E07000137   | East Lindsey                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        2483 | 1767.090 |              
+ 33701 | borough        | E07000138   | Lincoln                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |          96 |   35.669 |              
+ 33702 | borough        | E07000139   | North Kesteven                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         554 |  922.874 |              
+ 33703 | borough        | E07000140   | South Holland                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        3115 |  749.795 |              
+ 33704 | borough        | E07000141   | South Kesteven                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         779 |  943.051 |              
+ 33705 | borough        | E07000142   | West Lindsey                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         916 | 1156.243 |              
+ 33706 | borough        | E07000143   | Breckland                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         996 | 1304.869 |              
+ 33707 | borough        | E07000144   | Broadland                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1308 |  551.760 |              
+ 33708 | borough        | E07000145   | Great Yarmouth                      | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         816 |  174.108 |              
+ 33709 | borough        | E07000146   | King's Lynn and West Norfolk        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        6259 | 1439.089 |              
+ 33710 | borough        | E07000147   | North Norfolk                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        6353 |  966.753 |              
+ 33711 | borough        | E07000148   | Norwich                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         658 |   39.033 |              
+ 33712 | borough        | E07000149   | South Norfolk                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1543 |  907.145 |              
+ 33713 | borough        | E07000170   | Ashfield                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         353 |  109.619 |              
+ 33714 | borough        | E07000171   | Bassetlaw                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         626 |  638.234 |              
+ 33715 | borough        | E07000172   | Broxtowe                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         393 |   80.201 |              
+ 33716 | borough        | E07000173   | Gedling                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         299 |  120.040 |              
+ 33717 | borough        | E07000174   | Mansfield                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         222 |   76.732 |              
+ 33718 | borough        | E07000175   | Newark and Sherwood                 | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         751 |  651.758 |              
+ 33719 | borough        | E07000176   | Rushcliffe                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         600 |  409.510 |              
+ 33720 | borough        | E07000177   | Cherwell                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1176 |  589.104 |              
+ 33721 | borough        | E07000178   | Oxford                              | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         151 |   45.658 |              
+ 33722 | borough        | E07000179   | South Oxfordshire                   | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         953 |  678.806 |              
+ 33723 | borough        | E07000180   | Vale of White Horse                 | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         955 |  579.128 |              
+ 33724 | borough        | E07000181   | West Oxfordshire                    | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         831 |  714.934 |              
+ 33725 | borough        | E07000192   | Cannock Chase                       | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         229 |   78.929 |              
+ 33726 | borough        | E07000193   | East Staffordshire                  | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1111 |  390.252 |              
+ 33727 | borough        | E07000194   | Lichfield                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         655 |  331.458 |              
+ 33728 | borough        | E07000195   | Newcastle-under-Lyme                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         677 |  211.118 |              
+ 33729 | borough        | E07000196   | South Staffordshire                 | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         886 |  407.582 |              
+ 33730 | borough        | E07000197   | Stafford                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         888 |  598.643 |              
+ 33731 | borough        | E07000198   | Staffordshire Moorlands             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         976 |  576.297 |              
+ 33732 | borough        | E07000199   | Tamworth                            | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         152 |   30.869 |              
+ 33733 | borough        | E07000200   | Babergh                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |        1486 |  594.973 |              
+ 33734 | borough        | E07000202   | Ipswich                             | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         249 |   39.494 |              
+ 33735 | borough        | E07000203   | Mid Suffolk                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         930 |  870.706 |              
+ 33736 | borough        | E07000207   | Elmbridge                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         271 |   96.353 |              
+ 33737 | borough        | E07000208   | Epsom and Ewell                     | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         108 |   34.133 |              
+ 33738 | borough        | E07000209   | Guildford                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         693 |  271.125 |              
+ 33739 | borough        | E07000210   | Mole Valley                         | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         566 |  258.424 |              
+ 33740 | borough        | E07000211   | Reigate and Banstead                | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         439 |  129.175 |              
+ 33741 | borough        | E07000212   | Runnymede                           | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         212 |   78.092 |              
+ 33742 | borough        | E07000213   | Spelthorne                          | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         227 |   51.196 |              
+ 33743 | borough        | E07000214   | Surrey Heath                        | ONS Open Geography Portal | ONS_LAD_2025    | 2026-02-05 21:43:23.378472+00 | ST_MultiPolygon |         247 |   95.144 |              
+(200 rows)
+
+NOTE: canonical_geometries limited to first 200 rows for readability.
+
+##############################################
+DATA: public.catchment_definitions
+##############################################
+ id | school_id |           school_name            | catchment_priority | catchment_key | catchment_year | catchment_alloc_seats | catchment_active |  geography_type   | radius | radius_unit |                                                                                                                                                               members                                                                                                                                                                |                           members_hash                           |       geojson_built_at        | style |          updated_at           |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         members_display                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+----+-----------+----------------------------------+--------------------+---------------+----------------+-----------------------+------------------+-------------------+--------+-------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------+-------+-------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  6 |         6 | Gravesend Grammar School         |                  2 | pa2           |           2026 |                       | t                | parish            |        |             | ["E04004892", "E04004992", "E04005108", "E04012390", "E04012393", "E04012919", "E04012920", "E04013212", "E05015466"]                                                                                                                                                                                                                | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 | {}    | 2026-02-05 21:44:19.7043+00   | [{"code": "E04012390", "name": "Ash-cum-Ridley"}, {"code": "E04004892", "name": "Bean"}, {"code": "E04004992", "name": "Fawkham"}, {"code": "E04012393", "name": "Hartley"}, {"code": "E04012919", "name": "Longfield and New Barn"}, {"code": "E04012920", "name": "Southfleet"}, {"code": "E04005108", "name": "Stansted"}, {"code": "E04013212", "name": "Swanscombe and Greenhithe"}, {"code": "E05015466", "name": "Ebbsfleet (Unparished Area)"}]
+  7 |         6 | Gravesend Grammar School         |                  3 | pa3           |           2026 |                       | t                | parish            |        |             | ["E04001130", "E04004996", "E04012918", "E04012921"]                                                                                                                                                                                                                                                                                 | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 | {}    | 2026-02-05 21:44:19.718021+00 | [{"code": "E04001130", "name": "Cliffe and Cliffe Woods"}, {"code": "E04012918", "name": "Darenth"}, {"code": "E04004996", "name": "Horton Kirby and South Darenth"}, {"code": "E04012921", "name": "Stone"}]
+  2 |         1 | The Tiffin Girls' School         |                  2 | outer         |           2026 |                       | t                | postcode_district |        |             | ["CR4", "KT1", "KT10", "KT12", "KT13", "KT17", "KT19", "KT2", "KT3", "KT4", "KT5", "KT6", "KT7", "KT8", "KT9", "SM4", "SW13", "SW14", "SW15", "SW17", "SW18", "SW19", "SW20", "TW1", "TW10", "TW11", "TW12", "TW13", "TW14", "TW15", "TW16", "TW17", "TW2", "TW3", "TW4", "TW5", "TW7", "TW8", "TW9", "W13", "W3", "W4", "W5", "W7"] | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 | {}    | 2026-02-05 12:43:57.755057+00 | [{"code": "CR4", "name": "CR4"}, {"code": "KT1", "name": "KT1"}, {"code": "KT10", "name": "KT10"}, {"code": "KT12", "name": "KT12"}, {"code": "KT13", "name": "KT13"}, {"code": "KT17", "name": "KT17"}, {"code": "KT19", "name": "KT19"}, {"code": "KT2", "name": "KT2"}, {"code": "KT3", "name": "KT3"}, {"code": "KT4", "name": "KT4"}, {"code": "KT5", "name": "KT5"}, {"code": "KT6", "name": "KT6"}, {"code": "KT7", "name": "KT7"}, {"code": "KT8", "name": "KT8"}, {"code": "KT9", "name": "KT9"}, {"code": "SM4", "name": "SM4"}, {"code": "SW13", "name": "SW13"}, {"code": "SW14", "name": "SW14"}, {"code": "SW15", "name": "SW15"}, {"code": "SW17", "name": "SW17"}, {"code": "SW18", "name": "SW18"}, {"code": "SW19", "name": "SW19"}, {"code": "SW20", "name": "SW20"}, {"code": "TW1", "name": "TW1"}, {"code": "TW10", "name": "TW10"}, {"code": "TW11", "name": "TW11"}, {"code": "TW12", "name": "TW12"}, {"code": "TW13", "name": "TW13"}, {"code": "TW14", "name": "TW14"}, {"code": "TW15", "name": "TW15"}, {"code": "TW16", "name": "TW16"}, {"code": "TW17", "name": "TW17"}, {"code": "TW2", "name": "TW2"}, {"code": "TW3", "name": "TW3"}, {"code": "TW4", "name": "TW4"}, {"code": "TW5", "name": "TW5"}, {"code": "TW7", "name": "TW7"}, {"code": "TW8", "name": "TW8"}, {"code": "TW9", "name": "TW9"}, {"code": "W13", "name": "W13"}, {"code": "W3", "name": "W3"}, {"code": "W4", "name": "W4"}, {"code": "W5", "name": "W5"}, {"code": "W7", "name": "W7"}]
+  5 |         6 | Gravesend Grammar School         |                  1 | pa1           |           2026 |                       | t                | borough           |        |             | ["E07000109"]                                                                                                                                                                                                                                                                                                                        | 5e0381d26c66864b23c31ef5cc85a7120a39b6814cc9e8a2016e299ee4b18254 | 2026-02-05 21:44:19.682319+00 | {}    | 2026-02-05 21:44:19.682319+00 | [{"code": "E07000109", "name": "Gravesham"}]
+  1 |         1 | The Tiffin Girls' School         |                  1 | inner         |           2026 |                       | t                | ward              |        |             | ["E05013777", "E05013929", "E05013930", "E05013932", "E05013933", "E05013934", "E05013937", "E05013938", "E05013940", "E05013941", "E05013943", "E05013944", "E05013946"]                                                                                                                                                            | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 | {}    | 2026-02-05 12:43:57.472334+00 | [{"code": "E05013777", "name": "Ham, Petersham & Richmond Riverside"}, {"code": "E05013929", "name": "Berrylands"}, {"code": "E05013930", "name": "Canbury Gardens"}, {"code": "E05013932", "name": "Coombe Hill"}, {"code": "E05013933", "name": "Coombe Vale"}, {"code": "E05013934", "name": "Green Lane & St James"}, {"code": "E05013937", "name": "Kingston Gate"}, {"code": "E05013938", "name": "Kingston Town"}, {"code": "E05013940", "name": "New Malden Village"}, {"code": "E05013941", "name": "Norbiton"}, {"code": "E05013943", "name": "St Mark's & Seething Wells"}, {"code": "E05013944", "name": "Surbiton Hill"}, {"code": "E05013946", "name": "Tudor"}]
+  9 |         2 | Nonsuch High School for Girls    |                  1 | radius        |           2025 |                       | t                | radius            |  5.250 | km          | []                                                                                                                                                                                                                                                                                                                                   |                                                                  |                               | {}    | 2026-02-11 14:29:03.468541+00 | 
+ 10 |         3 | Wallington High School for Girls |                  1 | radius        |           2025 |                       | t                | radius            |  6.700 | km          | []                                                                                                                                                                                                                                                                                                                                   |                                                                  |                               | {}    | 2026-02-11 14:29:03.468541+00 | 
+(7 rows)
+
+
+##############################################
+DATA: public.catchment_geometries
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ id  | school_id |       school_name        | catchment_key | geometry_kind | member_code |                     built_from_members_hash                      |          updated_at           | geojson_bytes 
+-----+-----------+--------------------------+---------------+---------------+-------------+------------------------------------------------------------------+-------------------------------+---------------
+ 387 |         1 | The Tiffin Girls' School | inner         | individual    | E05013777   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          2580
+ 388 |         1 | The Tiffin Girls' School | inner         | individual    | E05013929   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |           612
+ 389 |         1 | The Tiffin Girls' School | inner         | individual    | E05013930   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |           731
+ 390 |         1 | The Tiffin Girls' School | inner         | individual    | E05013932   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1210
+ 391 |         1 | The Tiffin Girls' School | inner         | individual    | E05013933   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |           615
+ 392 |         1 | The Tiffin Girls' School | inner         | individual    | E05013934   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1392
+ 393 |         1 | The Tiffin Girls' School | inner         | individual    | E05013937   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |           941
+ 394 |         1 | The Tiffin Girls' School | inner         | individual    | E05013938   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1093
+ 395 |         1 | The Tiffin Girls' School | inner         | individual    | E05013940   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1331
+ 396 |         1 | The Tiffin Girls' School | inner         | individual    | E05013941   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1002
+ 397 |         1 | The Tiffin Girls' School | inner         | individual    | E05013943   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1063
+ 398 |         1 | The Tiffin Girls' School | inner         | individual    | E05013944   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |           854
+ 399 |         1 | The Tiffin Girls' School | inner         | individual    | E05013946   | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          1179
+ 400 |         1 | The Tiffin Girls' School | inner         | merged        |             | c5b79a208a9f1a8b7c6dad00bcd0d015b8bc4340f3ee1efa59f367168c634e35 | 2026-02-06 17:18:42.693626+00 |          3319
+ 401 |         1 | The Tiffin Girls' School | outer         | individual    | CR4         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         56301
+ 402 |         1 | The Tiffin Girls' School | outer         | individual    | KT1         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         31065
+ 403 |         1 | The Tiffin Girls' School | outer         | individual    | KT10        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         19160
+ 404 |         1 | The Tiffin Girls' School | outer         | individual    | KT12        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         24679
+ 405 |         1 | The Tiffin Girls' School | outer         | individual    | KT13        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         22845
+ 406 |         1 | The Tiffin Girls' School | outer         | individual    | KT17        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         35409
+ 407 |         1 | The Tiffin Girls' School | outer         | individual    | KT19        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         42547
+ 408 |         1 | The Tiffin Girls' School | outer         | individual    | KT2         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         30893
+ 409 |         1 | The Tiffin Girls' School | outer         | individual    | KT3         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         27511
+ 410 |         1 | The Tiffin Girls' School | outer         | individual    | KT4         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         34130
+ 411 |         1 | The Tiffin Girls' School | outer         | individual    | KT5         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         24727
+ 412 |         1 | The Tiffin Girls' School | outer         | individual    | KT6         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         28984
+ 413 |         1 | The Tiffin Girls' School | outer         | individual    | KT7         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         19865
+ 414 |         1 | The Tiffin Girls' School | outer         | individual    | KT8         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         13710
+ 415 |         1 | The Tiffin Girls' School | outer         | individual    | KT9         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         19446
+ 416 |         1 | The Tiffin Girls' School | outer         | individual    | SM4         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         50281
+ 417 |         1 | The Tiffin Girls' School | outer         | individual    | SW13        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         14712
+ 418 |         1 | The Tiffin Girls' School | outer         | individual    | SW14        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         14156
+ 419 |         1 | The Tiffin Girls' School | outer         | individual    | SW15        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         27972
+ 420 |         1 | The Tiffin Girls' School | outer         | individual    | SW17        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         53655
+ 421 |         1 | The Tiffin Girls' School | outer         | individual    | SW18        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         48264
+ 422 |         1 | The Tiffin Girls' School | outer         | individual    | SW19        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         61245
+ 423 |         1 | The Tiffin Girls' School | outer         | individual    | SW20        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         42428
+ 424 |         1 | The Tiffin Girls' School | outer         | individual    | TW1         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         26484
+ 425 |         1 | The Tiffin Girls' School | outer         | individual    | TW10        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         33634
+ 426 |         1 | The Tiffin Girls' School | outer         | individual    | TW11        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         18246
+ 427 |         1 | The Tiffin Girls' School | outer         | individual    | TW12        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         15485
+ 428 |         1 | The Tiffin Girls' School | outer         | individual    | TW13        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         21082
+ 429 |         1 | The Tiffin Girls' School | outer         | individual    | TW14        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         15779
+ 430 |         1 | The Tiffin Girls' School | outer         | individual    | TW15        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         22143
+ 431 |         1 | The Tiffin Girls' School | outer         | individual    | TW16        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         16839
+ 432 |         1 | The Tiffin Girls' School | outer         | individual    | TW17        | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         17428
+ 433 |         1 | The Tiffin Girls' School | outer         | individual    | TW2         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         35358
+ 434 |         1 | The Tiffin Girls' School | outer         | individual    | TW3         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         45772
+ 435 |         1 | The Tiffin Girls' School | outer         | individual    | TW4         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         43505
+ 436 |         1 | The Tiffin Girls' School | outer         | individual    | TW5         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         36770
+ 437 |         1 | The Tiffin Girls' School | outer         | individual    | TW7         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         35005
+ 438 |         1 | The Tiffin Girls' School | outer         | individual    | TW8         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         21922
+ 439 |         1 | The Tiffin Girls' School | outer         | individual    | TW9         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         24266
+ 440 |         1 | The Tiffin Girls' School | outer         | individual    | W13         | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         31373
+ 441 |         1 | The Tiffin Girls' School | outer         | individual    | W3          | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         37599
+ 442 |         1 | The Tiffin Girls' School | outer         | individual    | W4          | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         22483
+ 443 |         1 | The Tiffin Girls' School | outer         | individual    | W5          | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         42286
+ 444 |         1 | The Tiffin Girls' School | outer         | individual    | W7          | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |         20735
+ 445 |         1 | The Tiffin Girls' School | outer         | merged        |             | dc458f85cf878894381e5fc56e50df3f58a8c1ebbf69ab35502c5e6c81f647ad | 2026-02-06 17:18:43.022538+00 |        170320
+  76 |         6 | Gravesend Grammar School | pa1           | individual    | E07000109   | 5e0381d26c66864b23c31ef5cc85a7120a39b6814cc9e8a2016e299ee4b18254 | 2026-02-05 21:44:19.682319+00 |          8272
+  77 |         6 | Gravesend Grammar School | pa1           | merged        |             | 5e0381d26c66864b23c31ef5cc85a7120a39b6814cc9e8a2016e299ee4b18254 | 2026-02-05 21:44:19.682319+00 |          8261
+ 446 |         6 | Gravesend Grammar School | pa2           | individual    | E04004892   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1150
+ 447 |         6 | Gravesend Grammar School | pa2           | individual    | E04004992   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          2210
+ 448 |         6 | Gravesend Grammar School | pa2           | individual    | E04005108   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1979
+ 449 |         6 | Gravesend Grammar School | pa2           | individual    | E04012390   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          3045
+ 450 |         6 | Gravesend Grammar School | pa2           | individual    | E04012393   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1835
+ 451 |         6 | Gravesend Grammar School | pa2           | individual    | E04012919   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1637
+ 452 |         6 | Gravesend Grammar School | pa2           | individual    | E04012920   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1755
+ 453 |         6 | Gravesend Grammar School | pa2           | individual    | E04013212   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          2181
+ 454 |         6 | Gravesend Grammar School | pa2           | individual    | E05015466   | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          1489
+ 455 |         6 | Gravesend Grammar School | pa2           | merged        |             | 7de345d2489ab4bafdf952a25939ba1b9935f35a4cb919860937a1b3ad7aac7c | 2026-02-08 12:39:56.047325+00 |          6407
+  87 |         6 | Gravesend Grammar School | pa3           | individual    | E04001130   | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 |          4915
+  88 |         6 | Gravesend Grammar School | pa3           | individual    | E04004996   | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 |          2100
+  89 |         6 | Gravesend Grammar School | pa3           | individual    | E04012918   | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 |          2243
+  90 |         6 | Gravesend Grammar School | pa3           | individual    | E04012921   | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 |          1404
+  91 |         6 | Gravesend Grammar School | pa3           | merged        |             | fd81be3ae4d75155588a30ee0374e3466a562853c6cbe9de5739c6527a8421a8 | 2026-02-05 21:44:19.718021+00 |          9528
+(76 rows)
+
+NOTE: catchment_geometries limited to first 500 rows for readability.
+
+##############################################
+DATA: public.catchment_styles
+##############################################
+ school_id |  type  | fill_color | border_color | opacity | layer_type | geometry_mode | year | stroke_color | stroke_weight | stroke_opacity | fill_opacity |         created_at         
+-----------+--------+------------+--------------+---------+------------+---------------+------+--------------+---------------+----------------+--------------+----------------------------
+         2 | radius |            |              |         | radius     | circle        |      | #2563eb      |             2 |            1.0 |         0.15 | 2025-12-27 19:18:38.404923
+         3 | radius |            |              |         | radius     | circle        |      | #e67e22      |             2 |            1.0 |         0.15 | 2025-12-27 19:18:38.404923
+(2 rows)
+
+
+##############################################
+DATA: public.catchment_styles_backup
+##############################################
+ school_id |  type  | fill_color | border_color | opacity | layer_type | geometry_mode | year | stroke_color | stroke_weight | stroke_opacity | fill_opacity |         created_at         
+-----------+--------+------------+--------------+---------+------------+---------------+------+--------------+---------------+----------------+--------------+----------------------------
+         2 | radius |            |              |         | radius     | circle        |      | #2563eb      |             2 |            1.0 |         0.15 | 2025-12-27 19:18:38.404923
+         3 | radius |            |              |         | radius     | circle        |      | #e67e22      |             2 |            1.0 |         0.15 | 2025-12-27 19:18:38.404923
+(2 rows)
+
+
+##############################################
+DATA: public.catchments
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ id | school_id | type  | year | active |         created_at         |         updated_at         |    geom_type    | geom_points | area_km2 | geojson_bytes 
+----+-----------+-------+------+--------+----------------------------+----------------------------+-----------------+-------------+----------+---------------
+  6 |         1 | inner | 2025 | t      | 2025-12-12 00:12:16.54871  | 2025-12-12 00:12:16.54871  | ST_MultiPolygon |        1376 |  352.989 |         30114
+  5 |         1 | map   | 2025 | t      | 2025-12-10 22:56:47.928658 | 2025-12-10 22:56:47.928658 |                 |             |          |        189603
+  4 |         1 | outer | 2025 | t      | 2025-12-10 22:53:10.605792 | 2025-12-10 22:53:10.605792 | ST_MultiPolygon |        1375 |  352.989 |         30114
+(3 rows)
+
+NOTE: catchments limited to first 200 rows for readability.
+
+##############################################
+DATA: public.catchments_backup
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ id | school_id | type  | year | active |         created_at         |         updated_at         |    geom_type    | geom_points | area_km2 | geojson_bytes 
+----+-----------+-------+------+--------+----------------------------+----------------------------+-----------------+-------------+----------+---------------
+  6 |         1 | inner | 2025 | t      | 2025-12-12 00:12:16.54871  | 2025-12-12 00:12:16.54871  | ST_MultiPolygon |        1376 |  352.989 |         30114
+  5 |         1 | map   | 2025 | t      | 2025-12-10 22:56:47.928658 | 2025-12-10 22:56:47.928658 |                 |             |          |        189603
+  4 |         1 | outer | 2025 | t      | 2025-12-10 22:53:10.605792 | 2025-12-10 22:53:10.605792 | ST_MultiPolygon |        1375 |  352.989 |         30114
+(3 rows)
+
+NOTE: catchments_backup limited to first 200 rows for readability.
+
+##############################################
+DATA: public.deprecated_geojson_raw
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ json_bytes |                                                                                               json_preview                                                                                               
+------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+     189603 | {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[-0.3076, 51.41422], [-0.30829, 51.41504], [-0.30774, 51.41566], [-0.30784, 51.41609], [
+(1 row)
+
+
+##############################################
+DATA: public.deprecated_old_catchments
+##############################################
+ id | school_id | radius_m 
+----+-----------+----------
+  1 |         2 |     5250
+  2 |         3 |     6700
+(2 rows)
+
+
+##############################################
+DATA: public.postcode_areas_tmp
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ postcode_area | geom_type  | geom_points | area_km2 
+---------------+------------+-------------+----------
+ CR4           | ST_Polygon |         271 |    9.414
+ KT1           | ST_Polygon |         213 |    5.063
+ KT10          | ST_Polygon |         160 |   18.498
+ KT12          | ST_Polygon |         162 |   18.373
+ KT13          | ST_Polygon |         158 |   13.654
+ KT17          | ST_Polygon |         233 |   10.053
+ KT19          | ST_Polygon |         224 |   11.267
+ KT2           | ST_Polygon |         227 |    7.105
+ KT3           | ST_Polygon |         173 |    7.739
+ KT4           | ST_Polygon |         176 |    6.126
+ KT5           | ST_Polygon |         171 |    4.061
+ KT6           | ST_Polygon |         199 |    5.727
+ KT7           | ST_Polygon |         126 |    3.446
+ KT8           | ST_Polygon |         101 |    9.137
+ KT9           | ST_Polygon |         120 |   10.508
+ SM4           | ST_Polygon |         245 |    6.693
+ SW13          | ST_Polygon |         133 |    3.884
+ SW14          | ST_Polygon |         101 |    3.441
+ SW15          | ST_Polygon |         230 |   12.781
+ SW17          | ST_Polygon |         274 |    6.188
+ SW18          | ST_Polygon |         293 |    6.894
+ SW19          | ST_Polygon |         370 |   14.857
+ SW20          | ST_Polygon |         218 |    6.325
+ TW1           | ST_Polygon |         198 |    4.926
+ TW10          | ST_Polygon |         229 |   11.352
+ TW11          | ST_Polygon |         136 |    6.309
+ TW12          | ST_Polygon |         119 |    6.985
+ TW13          | ST_Polygon |         170 |    9.101
+ TW14          | ST_Polygon |         137 |    8.970
+ TW15          | ST_Polygon |         137 |    9.518
+ TW16          | ST_Polygon |         128 |    8.354
+ TW17          | ST_Polygon |         126 |   12.815
+ TW2           | ST_Polygon |         208 |    5.814
+ TW3           | ST_Polygon |         245 |    4.722
+ TW4           | ST_Polygon |         233 |    5.305
+ TW5           | ST_Polygon |         191 |    6.642
+ TW7           | ST_Polygon |         200 |    9.346
+ TW8           | ST_Polygon |         142 |    5.029
+ TW9           | ST_Polygon |         184 |    5.606
+ W13           | ST_Polygon |         212 |    3.898
+ W3            | ST_Polygon |         263 |    7.432
+ W4            | ST_Polygon |         215 |    6.834
+ W5            | ST_Polygon |         275 |    7.889
+ W7            | ST_Polygon |         163 |    4.907
+(44 rows)
+
+
+##############################################
+DATA: public.school_inner_postcodes
+##############################################
+ school_id | postcode_area 
+-----------+---------------
+         1 | TW9
+         1 | CR4
+         1 | TW8
+         1 | TW13
+         1 | KT9
+         1 | W5
+         1 | TW17
+         1 | TW14
+         1 | SW13
+         1 | SW19
+         1 | SM4
+         1 | KT17
+         1 | TW7
+         1 | TW11
+         1 | TW16
+         1 | SW14
+         1 | KT4
+         1 | TW3
+         1 | KT3
+         1 | TW1
+         1 | SW20
+         1 | KT8
+         1 | TW4
+         1 | TW10
+         1 | KT7
+         1 | W3
+         1 | SW18
+         1 | KT2
+         1 | TW12
+         1 | W13
+         1 | TW5
+         1 | KT10
+         1 | TW2
+         1 | KT19
+         1 | KT12
+         1 | KT6
+         1 | W4
+         1 | W7
+         1 | TW15
+         1 | KT5
+         1 | KT1
+         1 | SW15
+         1 | SW17
+         1 | KT13
+(44 rows)
+
+
+##############################################
+DATA: public.schools
+##############################################
+ id |               name               |    lat    |    lon    |                      location                      |        icon_url         | display_name |          website           |     phone     |               email                |                           address                            | description | show_radius | show_polygon | radius_km | catchment_type | school_code | local_authority | school_type | gender_type | boarding_type | selectivity_type | phase | age_range | religious_affiliation | top_school | marker_style_key | has_catchment | has_transport | has_admissions | has_exams | has_results_gcse | has_results_alevel | has_inspection | has_subjects | has_allocations | has_oxbridge | catchment_category | council_name | council_borough_code 
+----+----------------------------------+-----------+-----------+----------------------------------------------------+-------------------------+--------------+----------------------------+---------------+------------------------------------+--------------------------------------------------------------+-------------+-------------+--------------+-----------+----------------+-------------+-----------------+-------------+-------------+---------------+------------------+-------+-----------+-----------------------+------------+------------------+---------------+---------------+----------------+-----------+------------------+--------------------+----------------+--------------+-----------------+--------------+--------------------+--------------+----------------------
+  3 | Wallington High School for Girls |    51.348 |   -0.1488 | 0101000020E6100000CE88D2DEE00BC3BF068195438BAC4940 | /icons/School_red.png   |              |                            |               |                                    |                                                              |             | t           | f            |      6.70 | radius         |             |                 |             |             |               |                  |       |           |                       | f          | girls_state      | t             | f             | f              | f         | f                | f                  | f              | f            | f               | f            |                    |              | 
+  6 | Gravesend Grammar School         |  51.43734 |   0.38488 |                                                    | /icons/school_black.png |              |                            |               |                                    |                                                              |             | f           | t            |           | polygon        |             |                 |             |             |               |                  |       |           |                       | f          | boys_state       | t             | f             | f              | f         | f                | f                  | f              | f            | f               | f            | designated         |              | 
+  2 | Nonsuch High School for Girls    | 51.355417 | -0.223868 | 0101000020E6100000927A4FE5B4A7CCBFA2B8E34D7EAD4940 | /icons/School_red.png   |              |                            |               |                                    |                                                              |             | t           | f            |      5.25 | radius         |             |                 |             |             |               |                  |       |           |                       | f          | girls_state      | t             | f             | f              | f         | f                | f                  | f              | f            | f               | f            |                    |              | 
+  1 | The Tiffin Girls' School         |   51.4252 |  -0.30287 | 0101000020E610000018213CDA3862D3BF2D211FF46CB64940 | /icons/School_red.png   |              |                            |               |                                    |                                                              |             | f           | t            |           | polygon        |             |                 |             |             |               |                  |       |           |                       | f          | girls_state      | t             | f             | f              | f         | f                | f                  | f              | f            | f               | f            | designated         |              | 
+  7 | Wilson's School                  | 51.358845 |  -0.12806 | 0101000020E61000004E7FF6234564C0BFA4AA09A2EEAD4940 | /icons/school_black.png |              | https://www.wilsons.school | 020 8773 2931 | office@wilsonsschool.sutton.sch.uk | Wilson's School, Mollison Drive, Wallington, Surrey, SM6 9JW |             | f           | f            |           |                |             |                 |             |             |               |                  |       |           |                       | f          | boys_state       | f             | f             | f              | f         | f                | f                  | f              | f            | f               | f            | open               |              | 
+(5 rows)
+
+
+##############################################
+DATA: public.schools_backup
+##############################################
+ id |               name               |    lat    |    lon    |                      location                      |        icon_url         | display_name | website | phone | email | address | description | show_radius | show_polygon | radius_km | catchment_type | school_code | local_authority | school_type | gender_type | boarding_type | selectivity_type | phase | age_range | religious_affiliation | top_school | marker_style_key | has_catchment | has_transport | has_admissions | has_exams | has_results_gcse | has_results_alevel | has_inspection | has_subjects | has_allocations | has_oxbridge 
+----+----------------------------------+-----------+-----------+----------------------------------------------------+-------------------------+--------------+---------+-------+-------+---------+-------------+-------------+--------------+-----------+----------------+-------------+-----------------+-------------+-------------+---------------+------------------+-------+-----------+-----------------------+------------+------------------+---------------+---------------+----------------+-----------+------------------+--------------------+----------------+--------------+-----------------+--------------
+  2 | Nonsuch High School for Girls    | 51.355417 | -0.223868 | 0101000020E6100000927A4FE5B4A7CCBFA2B8E34D7EAD4940 | /icons/School_red.png   |              |         |       |       |         |             | t           | f            |      5.25 | radius         |             |                 |             |             |               |                  |       |           |                       | f          |                  | f             | f             | f              | f         | f                | f                  | f              | f            | f               | f
+  3 | Wallington High School for Girls |    51.348 |   -0.1488 | 0101000020E6100000CE88D2DEE00BC3BF068195438BAC4940 | /icons/school_black.png |              |         |       |       |         |             | t           | f            |      6.70 | radius         |             |                 |             |             |               |                  |       |           |                       | f          |                  | f             | f             | f              | f         | f                | f                  | f              | f            | f               | f
+  1 | The Tiffin Girls' School         |   51.4172 |   -0.2928 | 0101000020E6100000053411363CBDD2BF13F241CF66B54940 | /icons/School_build.png |              |         |       |       |         |             | f           | t            |           | polygon        |             |                 |             |             |               |                  |       |           |                       | f          |                  | t             | f             | f              | f         | f                | f                  | f              | f            | f               | f
+(3 rows)
+
+
+##############################################
+DATA: public.spatial_ref_sys
+##############################################
+NOTE: Full data not printed for this table.
+Reason: system-managed / noisy table.
+
+##############################################
+DATA: public.user_settings
+##############################################
+ id | home_postcode | home_lat | home_lon |         updated_at         
+----+---------------+----------+----------+----------------------------
+  1 |               |    51.41 |     -0.2 | 2026-01-02 23:59:51.831217
+  2 |               |    51.41 |    -0.26 | 2026-01-03 00:00:27.81374
+(2 rows)
+
+
+##############################################
+DATA: public.admission_exam_papers
+##############################################
+ id | admission_exam_id | test_number | subject | question_count | duration_minutes | negative_marking | question_type | test_date 
+----+-------------------+-------------+---------+----------------+------------------+------------------+---------------+-----------
+(0 rows)
+
+
+##############################################
+DATA: public.admission_exams
+##############################################
+ id | school_id | year | subjects | stages | exam_dates | application_info | applicants | score_distribution | created_at | updated_at 
+----+-----------+------+----------+--------+------------+------------------+------------+--------------------+------------+------------
+(0 rows)
+
+
+##############################################
+DATA: public.admissions_allocation_history
+##############################################
+ id | school_id | entry_year | on_time_apps | first_pref_apps | offers_total | last_distance_offered_km | notes 
+----+-----------+------------+--------------+-----------------+--------------+--------------------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.admissions_criteria
+##############################################
+ id | admissions_policy_id | criterion_order | criterion_type | seats_allocated | min_score | catchment_set_type | notes 
+----+----------------------+-----------------+----------------+-----------------+-----------+--------------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.admissions_policies
+##############################################
+ id | school_id | year | oversubscription_criteria | catchment_requirements | key_dates | notes | created_at | updated_at | entry_year | year_group | total_intake | policy_url | summary | last_updated 
+----+-----------+------+---------------------------+------------------------+-----------+-------+------------+------------+------------+------------+--------------+------------+---------+--------------
+(0 rows)
+
+
+##############################################
+DATA: public.alevel_results
+##############################################
+ id | school_id | year | rank | results | created_at | updated_at | metric_key | metric_value | source_url | notes 
+----+-----------+------+------+---------+------------+------------+------------+--------------+------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.deprecated_search_config
+##############################################
+ id | default_radius_m | enable_radius_search | enable_polygon_search | max_results 
+----+------------------+----------------------+-----------------------+-------------
+(0 rows)
+
+
+##############################################
+DATA: public.gcse_results
+##############################################
+ id | school_id | year | rank | results | created_at | updated_at | metric_key | metric_value | source_url | notes 
+----+-----------+------+------+---------+------------+------------+------------+--------------+------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.inspections
+##############################################
+ id | school_id | inspection_date | inspector | rating | summary | report_url | created_at | updated_at | inspection_body | overall_grade | notes 
+----+-----------+-----------------+-----------+--------+---------+------------+------------+------------+-----------------+---------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.oxbridge_destinations
+##############################################
+ id | school_id | year | oxford_offers | cambridge_offers | destination_list | created_at | updated_at | metric_key | metric_value | source_url 
+----+-----------+------+---------------+------------------+------------------+------------+------------+------------+--------------+------------
+(0 rows)
+
+
+##############################################
+DATA: public.postcodes
+##############################################
+NOTE: Slim dump (no full boundaries).
+
+ id | code | geom_type 
+----+------+-----------
+(0 rows)
+
+NOTE: postcodes limited to first 200 rows for readability.
+
+##############################################
+DATA: public.school_bus_routes
+##############################################
+ id | school_id | route_name | stops | timetable | created_at | updated_at 
+----+-----------+------------+-------+-----------+------------+------------
+(0 rows)
+
+
+##############################################
+DATA: public.school_subjects
+##############################################
+ id | school_id | subject_group | subject_name | is_offered | notes 
+----+-----------+---------------+--------------+------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.transport_data
+##############################################
+ id | school_id | mode | time_minutes | via | data_source | updated_at 
+----+-----------+------+--------------+-----+-------------+------------
+(0 rows)
+
+
+##############################################
+DATA: public.transport_profiles
+##############################################
+ school_id | enable_google_routes | school_day_departure_time | school_day_arrival_time | notes 
+-----------+----------------------+---------------------------+-------------------------+-------
+(0 rows)
+
+
+##############################################
+DATA: public.user_profile
+##############################################
+ id | home_postcode | home_lat | home_lon 
+----+---------------+----------+----------
+(0 rows)
+
+
