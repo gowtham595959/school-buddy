@@ -164,13 +164,19 @@ jobs:
       # ── Update Web App container to use new ACR image ───────
       - name: Update Web App container image
         run: |
+          IMAGE="${{ needs.build-and-push.outputs.full_image }}"
+          if [ -z "$IMAGE" ]; then
+            echo "::error::full_image output is empty from build-and-push job"
+            exit 1
+          fi
+          echo "==> Deploying image: $IMAGE"
           az webapp config container set \
             --name ${{ steps.params.outputs.webapp_name }} \
             --resource-group ${{ steps.params.outputs.webapp_rg }} \
-            --container-image-name ${{ needs.build-and-push.outputs.full_image }} \
-            --container-registry-url https://${{ steps.params.outputs.acr_login_server }} \
-            --container-registry-user ${{ secrets.ACR_USERNAME_SCHOOL_BUDDY }} \
-            --container-registry-password ${{ secrets.ACR_PASSWORD_SCHOOL_BUDDY }}
+            --docker-custom-image-name "$IMAGE" \
+            --docker-registry-server-url https://${{ steps.params.outputs.acr_login_server }} \
+            --docker-registry-server-user ${{ secrets.ACR_USERNAME_SCHOOL_BUDDY }} \
+            --docker-registry-server-password ${{ secrets.ACR_PASSWORD_SCHOOL_BUDDY }}
 
       # ── Apply app settings from parameters file + secrets ───
       - name: Apply app settings
