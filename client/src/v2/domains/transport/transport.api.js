@@ -1,7 +1,7 @@
 // client/src/v2/domains/transport/transport.api.js
 
 export async function fetchTransportRoute(payload) {
-  const res = await fetch("http://localhost:5000/api/transport-route", {
+  const res = await fetch("/api/transport-route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
