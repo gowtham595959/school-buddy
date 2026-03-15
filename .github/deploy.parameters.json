@@ -2,7 +2,7 @@
   "_comment": "School Buddy — Azure deployment parameters. Sensitive values must be stored as GitHub Secrets (see CICD_HANDOVER.md). Update placeholder values before first deployment.",
 
   "acr": {
-    "loginServer": "schoolbuddyacr.azurecr.io",
+    "loginServer": "acrschbuddydev01.azurecr.io",
     "repository": "school-buddy",
     "resourceGroup": "school-buddy-rg",
     "subscriptionId": "<your-azure-subscription-id>"
