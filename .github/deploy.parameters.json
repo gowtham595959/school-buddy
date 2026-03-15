@@ -5,7 +5,7 @@
     "loginServer": "acrschbuddydev01.azurecr.io",
     "repository": "school-buddy",
     "resourceGroup": "school-buddy-rg",
-    "subscriptionId": "<your-azure-subscription-id>"
+    "subscriptionId": "21568102-082f-4c05-b6af-a49ac3eb13dc"
   },
 
   "webapp": {
