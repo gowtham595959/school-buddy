@@ -138,12 +138,14 @@ jobs:
         id: params
         run: |
           ACR_LOGIN_SERVER=$(jq -r '.acr.loginServer' ${{ env.PARAMS_FILE }})
+          ACR_REPOSITORY=$(jq -r '.acr.repository' ${{ env.PARAMS_FILE }})
           ACR_RESOURCE_GROUP=$(jq -r '.acr.resourceGroup' ${{ env.PARAMS_FILE }})
           SUBSCRIPTION_ID=$(jq -r '.acr.subscriptionId' ${{ env.PARAMS_FILE }})
           WEBAPP_NAME=$(jq -r '.webapp.name' ${{ env.PARAMS_FILE }})
           WEBAPP_RG=$(jq -r '.webapp.resourceGroup' ${{ env.PARAMS_FILE }})
 
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_repository=$ACR_REPOSITORY" >> $GITHUB_OUTPUT
           echo "acr_resource_group=$ACR_RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "subscription_id=$SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
           echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
@@ -162,13 +164,11 @@ jobs:
             }
 
       # ── Update Web App container to use new ACR image ───────
+      # Reconstruct image name from params + sha (avoids empty outputs when re-running deploy only)
       - name: Update Web App container image
         run: |
-          IMAGE="${{ needs.build-and-push.outputs.full_image }}"
-          if [ -z "$IMAGE" ]; then
-            echo "::error::full_image output is empty from build-and-push job"
-            exit 1
-          fi
+          TAG="${GITHUB_SHA:0:8}"
+          IMAGE="${{ steps.params.outputs.acr_login_server }}/${{ steps.params.outputs.acr_repository }}:${TAG}"
           echo "==> Deploying image: $IMAGE"
           az webapp config container set \
             --name ${{ steps.params.outputs.webapp_name }} \
@@ -252,9 +252,12 @@ jobs:
       - name: Deployment summary
         run: |
           WEBAPP_NAME="${{ steps.params.outputs.webapp_name }}"
+          TAG="${{ github.sha }}"
+          TAG="${TAG:0:8}"
+          IMAGE="${{ steps.params.outputs.acr_login_server }}/${{ steps.params.outputs.acr_repository }}:${TAG}"
           echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **Web App:** \`${WEBAPP_NAME}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image deployed:** \`${{ needs.build-and-push.outputs.full_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image deployed:** \`${IMAGE}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **URL:** https://${WEBAPP_NAME}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
