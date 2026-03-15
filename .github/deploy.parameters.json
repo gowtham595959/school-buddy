@@ -4,13 +4,13 @@
   "acr": {
     "loginServer": "acrschbuddydev01.azurecr.io",
     "repository": "school-buddy",
-    "resourceGroup": "school-buddy-rg",
+    "resourceGroup": "Schoolbuddy-dev-01",
     "subscriptionId": "21568102-082f-4c05-b6af-a49ac3eb13dc"
   },
 
   "webapp": {
-    "name": "school-buddy-app",
-    "resourceGroup": "school-buddy-rg",
+    "name": "school-buddy",
+    "resourceGroup": "Schoolbuddy-dev-01",
     "slot": "production"
   },
 
