@@ -193,6 +193,17 @@ do_push() {
   local branch
   branch=$(git branch --show-current)
   log_section "Pushing $branch"
+
+  # Pull first if remote has new commits (avoids "rejected - fetch first").
+  # Use merge (not rebase) to avoid conflicts with protected files like .vscode.
+  if git fetch origin "$branch" 2>/dev/null; then
+    behind=$(git rev-list --count HEAD..origin/"$branch" 2>/dev/null || echo "0")
+    if [ "$behind" -gt 0 ]; then
+      log_warn "Remote has $behind new commit(s). Pulling first..."
+      git pull origin "$branch" --no-rebase
+    fi
+  fi
+
   git push origin "$branch"
   log_ok "Pushed to origin/$branch"
 }
