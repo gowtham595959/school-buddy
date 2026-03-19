@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # --------------------------------------------------------
-# GIT DEPLOY WORKFLOW
-# Stage → Commit → Push → (optional) Merge to main
+# School Buddy — Code, DB, Merge GIT, Deploy Azure
 #
-# Usage:
-#   ./scripts/git_deploy.sh stage              # Stage all (respects .gitignore)
-#   ./scripts/git_deploy.sh commit "message"    # Stage + commit
-#   ./scripts/git_deploy.sh push                # Push current branch
-#   ./scripts/git_deploy.sh full "message"      # Stage + commit + push
-#   ./scripts/git_deploy.sh merge-main          # Merge feature branch into main + push
-#   ./scripts/git_deploy.sh all "message"       # Full: stage, commit, push, merge-main
+# GIT (GitHub):
+#   status              Show repo status (untracked, staged, committed)
+#   stage               Stage all (skips large files)
+#   commit "message"    Stage + commit
+#   push                Push current branch
+#   full "message"      Stage + commit + push
+#   merge-main          Merge feature branch → main and push
+#   all "message"       Full: stage, commit, push, merge-main
+#
+# DB (Azure sync):
+#   db-migrations       Run migrations on local Docker DB
+#   db-full             Full sync: backup → upload to Azure → restart
+#
+# Usage: ./scripts/Code_DB_MergeGIT_DeployAzure.sh [command] [args]
 # --------------------------------------------------------
 
 set -e
@@ -18,11 +24,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
 
-# Default feature branch (override with GIT_FEATURE_BRANCH env)
+# Auto-load Azure config for DB commands
+if [ -f "$SCRIPT_DIR/azure.env" ]; then
+  set -a
+  source "$SCRIPT_DIR/azure.env"
+  set +a
+fi
+
 FEATURE_BRANCH="${GIT_FEATURE_BRANCH:-feature/catchments-v2}"
 MAIN_BRANCH="main"
-
-# Max file size to warn about (50 MB)
 MAX_FILE_SIZE_MB=50
 
 log_section() {
@@ -36,22 +46,28 @@ log_ok() { echo "✅ $1"; }
 log_warn() { echo "⚠️  $1"; }
 log_err() { echo "❌ $1"; }
 
-# Show all script options (used at end of status and as help)
 show_script_options() {
   echo ""
   echo "====================================="
-  echo "📋 What you can do with this script"
+  echo "📋 Options"
   echo "====================================="
   echo ""
-  echo "  $0 status              Show full repo status (untracked, staged, committed)"
-  echo "  $0 stage               Stage all (skips large files)"
-  echo "  $0 commit \"message\"    Stage + commit"
-  echo "  $0 push                Push current branch"
-  echo "  $0 full \"message\"      Stage + commit + push"
-  echo "  $0 merge-main          Merge $FEATURE_BRANCH → $MAIN_BRANCH and push"
-  echo "  $0 all \"message\"       Full: stage, commit, push, merge-main"
+  echo "  GIT (GitHub):"
+  echo "    $0 status              Show repo status"
+  echo "    $0 stage               Stage all (skips large files)"
+  echo "    $0 commit \"message\"    Stage + commit"
+  echo "    $0 push                Push current branch"
+  echo "    $0 full \"message\"      Stage + commit + push"
+  echo "    $0 merge-main          Merge $FEATURE_BRANCH → $MAIN_BRANCH"
+  echo "    $0 all \"message\"       Full: stage, commit, push, merge-main"
+  echo ""
+  echo "  DB (Azure sync):"
+  echo "    $0 db-migrations       Run migrations on local DB"
+  echo "    $0 db-full             Full sync: backup → upload → restart Azure"
   echo ""
 }
+
+# ─── GIT ────────────────────────────────────────────────────────────────────
 
 do_status() {
   local branch
@@ -117,19 +133,6 @@ do_status() {
   show_script_options
 }
 
-# Find large untracked files (would be added by git add -A)
-# Output: newline-separated "FILE_PATH SIZE_MB"
-get_large_untracked_files() {
-  git ls-files --others --exclude-standard | while IFS= read -r f; do
-    [ -f "$f" ] || continue
-    size_mb=$(du -m "$f" 2>/dev/null | cut -f1)
-    if [ -n "$size_mb" ] && [ "$size_mb" -ge "$MAX_FILE_SIZE_MB" ]; then
-      echo "$f $size_mb"
-    fi
-  done
-}
-
-# Display skipped large files (name and size separately)
 show_skipped_files() {
   [ -n "$1" ] || return 0
   echo ""
@@ -144,13 +147,10 @@ show_skipped_files() {
   done
   echo ""
   log_warn "Add these to .gitignore to avoid future prompts."
-  echo "  To push later: $0 push"
 }
 
 do_stage() {
   log_section "Staging changes"
-
-  # Collect large files before staging
   large_files=""
   while IFS= read -r f; do
     [ -f "$f" ] || continue
@@ -161,8 +161,6 @@ do_stage() {
   done < <(git ls-files --others --exclude-standard)
 
   git add -A
-
-  # Unstage large files so they are not committed
   if [ -n "$large_files" ]; then
     echo "$large_files" | while IFS= read -r line; do
       [ -z "$line" ] && continue
@@ -173,8 +171,6 @@ do_stage() {
 
   log_ok "Staged all changes (large files excluded)"
   git status --short
-
-  # Display skipped files separately
   show_skipped_files "$large_files"
 }
 
@@ -193,9 +189,6 @@ do_push() {
   local branch
   branch=$(git branch --show-current)
   log_section "Pushing $branch"
-
-  # Pull first if remote has new commits (avoids "rejected - fetch first").
-  # Use merge (not rebase) to avoid conflicts with protected files like .vscode.
   if git fetch origin "$branch" 2>/dev/null; then
     behind=$(git rev-list --count HEAD..origin/"$branch" 2>/dev/null || echo "0")
     if [ "$behind" -gt 0 ]; then
@@ -203,7 +196,6 @@ do_push() {
       git pull origin "$branch" --no-rebase
     fi
   fi
-
   git push origin "$branch"
   log_ok "Pushed to origin/$branch"
 }
@@ -212,12 +204,10 @@ do_merge_main() {
   log_section "Merge $FEATURE_BRANCH → $MAIN_BRANCH"
   local current
   current=$(git branch --show-current)
-
   if [ "$current" != "$FEATURE_BRANCH" ]; then
     log_warn "Current branch is '$current'. Checking out $FEATURE_BRANCH..."
     git checkout "$FEATURE_BRANCH"
   fi
-
   git fetch origin "$MAIN_BRANCH" 2>/dev/null || true
   git checkout "$MAIN_BRANCH"
   git pull origin "$MAIN_BRANCH" 2>/dev/null || true
@@ -227,8 +217,45 @@ do_merge_main() {
   git checkout "$FEATURE_BRANCH"
 }
 
-# --- Main ---
+# ─── DB ─────────────────────────────────────────────────────────────────────
+
+do_db_migrations() {
+  log_section "DB: Running migrations on local"
+  "$SCRIPT_DIR/db_sync_azure.sh" migrate
+}
+
+do_db_full() {
+  log_section "DB: Full sync Codespace → Azure"
+
+  if [ -z "$AZURE_STORAGE_ACCOUNT" ]; then
+    log_err "AZURE_STORAGE_ACCOUNT not set. Source scripts/azure.env"
+    exit 1
+  fi
+
+  if [ -z "$AZURE_STORAGE_KEY" ] && command -v az &>/dev/null; then
+    log_warn "Fetching storage key via az..."
+    AZURE_STORAGE_KEY=$(az storage account keys list \
+      --account-name "$AZURE_STORAGE_ACCOUNT" \
+      --resource-group "${AZURE_WEBAPP_RG:-Schoolbuddy-dev-01}" \
+      --query "[0].value" -o tsv 2>/dev/null)
+    export AZURE_STORAGE_KEY
+  fi
+
+  if [ -z "$AZURE_STORAGE_KEY" ]; then
+    log_err "Set AZURE_STORAGE_KEY in scripts/azure.env"
+    exit 1
+  fi
+
+  "$SCRIPT_DIR/db_sync_azure.sh" migrate
+  "$SCRIPT_DIR/db_sync_azure.sh" backup
+  "$SCRIPT_DIR/db_sync_azure.sh" upload
+  log_ok "Full sync complete. Wait 2–3 min for Azure to restore."
+}
+
+# ─── Main ───────────────────────────────────────────────────────────────────
+
 case "${1:-}" in
+  # Git
   status)
     do_status
     ;;
@@ -256,13 +283,18 @@ case "${1:-}" in
     do_push
     do_merge_main
     ;;
+  # DB
+  db-migrations)
+    do_db_migrations
+    ;;
+  db-full)
+    do_db_full
+    ;;
   *)
-    # No args or unknown: show status (includes script options at end)
     do_status
     ;;
 esac
 
-# Show options at end for non-status commands
 if [ "${1:-}" != "status" ] && [ -n "${1:-}" ]; then
   echo ""
   echo "====================================="

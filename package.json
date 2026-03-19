@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "deploy": "./scripts/git_deploy.sh",
-    "deploy:stage": "./scripts/git_deploy.sh stage",
-    "deploy:full": "./scripts/git_deploy.sh full"
+    "deploy": "./scripts/Code_DB_MergeGIT_DeployAzure.sh",
+    "deploy:stage": "./scripts/Code_DB_MergeGIT_DeployAzure.sh stage",
+    "deploy:full": "./scripts/Code_DB_MergeGIT_DeployAzure.sh full",
+    "deploy:db": "./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full"
   },
   "dependencies": {
     "fast-glob": "^3.3.3",

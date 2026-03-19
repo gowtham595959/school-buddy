@@ -59,6 +59,17 @@ else
   echo ">>> [DB] Database '$PG_DB' already exists — skipping restore."
 fi
 
+# ── 4b. Run migrations (schema updates; use IF NOT EXISTS for idempotency) ─
+if [ -d /app/db/migrations ] && [ -n "$(ls -A /app/db/migrations/*.sql 2>/dev/null)" ]; then
+  echo ">>> [DB] Running migrations..."
+  for f in /app/db/migrations/*.sql; do
+    [ -f "$f" ] || continue
+    echo ">>> [DB]   Applying $(basename "$f")..."
+    gosu postgres psql -d "$PG_DB" -f "$f" -v ON_ERROR_STOP=1
+  done
+  echo ">>> [DB] Migrations complete."
+fi
+
 # ── 5. Start Node.js API ─────────────────────────────────────
 echo ">>> [API] Starting Node.js on port $API_PORT..."
 cd /app/server

@@ -499,6 +499,12 @@ az webapp log download --name school-buddy-app --resource-group school-buddy-rg
 
 Returns `200 OK` when the Node.js API is running and connected to PostgreSQL. This endpoint is used by the pipeline's post-deploy health check.
 
+### Detailed debugging
+
+For "DB not connected" in production, see **[PRODUCTION_DEBUG.md](./PRODUCTION_DEBUG.md)** — step-by-step checks and fixes.
+
+For applying DB migrations to Azure, see **[DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md)**.
+
 ### Common issues
 
 | Symptom | Likely cause | Fix |
