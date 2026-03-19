@@ -35,6 +35,9 @@ COPY server/package*.json ./
 RUN npm ci --omit=dev --silent
 COPY server/src ./src
 
+# ── Copy DB migrations (run on container startup) ──────────────
+COPY db/migrations /app/db/migrations
+
 # ── Copy built React app to nginx web root ────────────────────
 COPY --from=frontend-build /build/client/build /usr/share/nginx/html
 

@@ -25,6 +25,6 @@
     "POSTGRES_USER": "postgres",
     "POSTGRES_DB": "schoolmap",
     "NODE_ENV": "production",
-    "_secrets_comment": "POSTGRES_PASSWORD and GOOGLE_MAPS_API_KEY must be stored as GitHub Secrets (POSTGRES_PASSWORD, GOOGLE_MAPS_API_KEY) — never put secret values here"
+    "_secrets_comment": "POSTGRES_PASSWORD_SCHOOL_BUDDY, ACR_USERNAME_SCHOOL_BUDDY, ACR_PASSWORD_SCHOOL_BUDDY, GOOGLE_MAPS_API_KEY — store in GitHub Secrets; never put secret values here"
   }
 }
