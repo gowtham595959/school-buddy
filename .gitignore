@@ -137,3 +137,6 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Large DB backup zips (avoid 150MB+ commits)
+backups/schoolbuddy_backup_*.zip

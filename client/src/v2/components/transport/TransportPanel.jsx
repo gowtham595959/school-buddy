@@ -191,7 +191,15 @@ export default function TransportPanel({
             Clear route
           </button>
 
-          <button onClick={onClose} style={{ cursor: "pointer" }}>
+          <button
+            onClick={() => {
+              onClearRoute?.();
+              onLeaveOptionsList?.();
+              onClose?.();
+            }}
+            style={{ cursor: "pointer" }}
+            title="Close transport and clear route from map"
+          >
             ✕
           </button>
         </div>
@@ -242,7 +250,23 @@ export default function TransportPanel({
       >
         {loading && <div>Loading transport…</div>}
 
-        {error && <div style={{ color: "red", fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ color: "red", fontSize: 12, marginBottom: 8 }}>{error}</div>}
+
+        {!loading && !error && !payload && (
+          <div style={{ fontSize: 12, color: "#666" }}>
+            Set your home postcode to see transport options.
+          </div>
+        )}
+
+        {!loading &&
+          !error &&
+          payload &&
+          availableModes.length === 0 && (
+          <div style={{ fontSize: 12, color: "#666" }}>
+            No transport options could be loaded. Ensure the server has a valid
+            Google Maps API key with Directions API enabled.
+          </div>
+        )}
 
         {!loading &&
           !error &&

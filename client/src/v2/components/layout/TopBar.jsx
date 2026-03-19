@@ -3,10 +3,25 @@ import { BRANDING } from "../../config/branding";
 
 export default function TopBar({
   postcode,
+  defaultPostcode,
   onPostcodeChange,
+  onChangePostcode,
   onPostcodeSubmit,
+  onSubmitPostcode,
   error,
 }) {
+  const handleChange = onPostcodeChange ?? onChangePostcode ?? (() => {});
+  const handleSubmit = onPostcodeSubmit ?? onSubmitPostcode ?? (() => {});
+  const isDefault = defaultPostcode && postcode === defaultPostcode;
+
+  const handleFocus = () => {
+    if (isDefault) handleChange("");
+  };
+
+  const handleBlur = () => {
+    if (postcode.trim() === "") handleChange(defaultPostcode ?? "");
+  };
+
   return (
     <div className="v2-topbar">
       <div className="v2-topbar-left">
@@ -16,14 +31,16 @@ export default function TopBar({
         </div>
 
         <input
-          className="v2-postcode"
+          className={`v2-postcode ${isDefault ? "v2-postcode--default" : ""}`}
           value={postcode}
           placeholder="e.g. SM5 4NZ"
-          onChange={(e) => onPostcodeChange(e.target.value)}
+          onChange={(e) => handleChange?.(e.target.value)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              onPostcodeSubmit?.(postcode);
+              handleSubmit?.(postcode);
             }
           }}
           // ✅ Add home icon without changing layout/CSS build behavior

@@ -10,7 +10,7 @@ export default function useTransportUI({ homePosition, postcode }) {
   const [transportSchool, setTransportSchool] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [hoverRoute, setHoverRoute] = useState(null);
-
+  const [clearVersion, setClearVersion] = useState(0); // bump to force activeRoute recompute when ref is cleared
   // ✅ NEW: hold last hovered route while inside list so gaps don't fall back to selected
   const stickyPreviewRouteRef = useRef(null);
 
@@ -22,9 +22,10 @@ export default function useTransportUI({ homePosition, postcode }) {
   }, [homePosition, postcode]);
 
   // ✅ CHANGE: hover -> sticky preview -> selected
+  // clearVersion forces re-run when we clear (ref doesn't trigger re-render)
   const activeRoute = useMemo(() => {
     return hoverRoute || stickyPreviewRouteRef.current || selectedRoute || null;
-  }, [hoverRoute, selectedRoute]);
+  }, [hoverRoute, selectedRoute, clearVersion]);
 
   const openTransportForSchool = useCallback((school) => {
     setTransportSchool(school || null);
@@ -38,6 +39,16 @@ export default function useTransportUI({ homePosition, postcode }) {
     setSelectedRoute(null);
     setHoverRoute(null);
     stickyPreviewRouteRef.current = null;
+    setClearVersion((v) => v + 1); // Force re-render so route clears from map
+  }, []);
+
+  /** Toggle transport panel: opens for school, or closes if already open for this school (same as X). */
+  const toggleTransportForSchool = useCallback((school) => {
+    setTransportSchool((prev) => (prev?.id === school?.id ? null : school || null));
+    setSelectedRoute(null);
+    setHoverRoute(null);
+    stickyPreviewRouteRef.current = null;
+    setClearVersion((v) => v + 1);
   }, []);
 
   const onSelectRoute = useCallback((route) => {
@@ -67,6 +78,7 @@ export default function useTransportUI({ homePosition, postcode }) {
     setSelectedRoute(null);
     setHoverRoute(null);
     stickyPreviewRouteRef.current = null;
+    setClearVersion((v) => v + 1); // Force re-render so activeRoute recalculates
   }, []);
 
   // ✅ HARD RESET when address/home location changes
@@ -100,6 +112,7 @@ export default function useTransportUI({ homePosition, postcode }) {
     activeRoute,
 
     openTransportForSchool,
+    toggleTransportForSchool,
     closeTransport,
     onSelectRoute,
     onHoverRoute,

@@ -35,5 +35,4 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
 
 
-// After this line runs, the App.js component loads,
-// then App.js loads MapView, and the whole UI appears on the screen.
+// After this line runs, App.js loads ExplorePage (v2), and the UI appears.
