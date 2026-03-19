@@ -1,6 +1,6 @@
 // client/src/v2/pages/ExplorePage.jsx
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import TopBar from "../components/layout/TopBar";
 import LeftPanel from "../components/sidebar/LeftPanel";
@@ -8,25 +8,40 @@ import MapCanvas from "../components/map/MapCanvas";
 import SchoolMarkersV2Layer from "../components/map/SchoolMarkersV2Layer";
 import LegendControl from "../components/map/LegendControl";
 import SelectedCatchmentsLayers from "../components/map/SelectedCatchmentsLayers";
-
+import FitCatchmentBounds from "../components/map/FitCatchmentBounds";
+import SchoolDetailDrawer from "../components/drawer/SchoolDetailDrawer";
 import PanToHomeV2 from "../components/map/PanToHomeV2";
 import HomeMarkerV2Layer from "../components/map/HomeMarkerV2Layer";
 import SetHomeOnMapClickV2 from "../components/map/SetHomeOnMapClickV2";
-
 import TransportRouteLayer from "../components/transport/TransportRouteLayer";
 import FitRouteBounds from "../components/transport/FitRouteBounds";
 import FitHomeSchoolBounds from "../components/transport/FitHomeSchoolBounds";
-
 import { DEFAULT_POSTCODE } from "../config/defaultPostcode";
-
 import { useHomeLocation } from "../domains/home/useHomeLocation";
 import { useSchools } from "../domains/schools/useSchools";
 import { useSelectedCatchments } from "../domains/catchmentV2/useSelectedCatchments";
 import useTransportUI from "../domains/transport/useTransportUI";
 import { useCatchmentCheck } from "../domains/catchmentCheck/useCatchmentCheck";
 
+// Static layout styles (avoid recreating on every render)
+const SHELL_STYLE = {
+  height: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  minHeight: 0,
+};
+const BODY_STYLE = { flex: 1, display: "flex", minHeight: 0 };
+const MAP_WRAP_STYLE = {
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  position: "relative",
+};
+const SIDEBAR_STYLE = { minHeight: 0, overflow: "auto" };
+
 export default function ExplorePage() {
   const [legendOpen, setLegendOpen] = useState(false);
+  const [drawerSchool, setDrawerSchool] = useState(null);
 
   const {
     postcode,
@@ -43,6 +58,14 @@ export default function ExplorePage() {
     useSelectedCatchments();
 
   const transport = useTransportUI({ homePosition, postcode });
+
+  // Close drawer when transport opens for a different school
+  const transportSchoolId = transport.transportSchool?.id;
+  useEffect(() => {
+    if (transportSchoolId && drawerSchool?.id && transportSchoolId !== drawerSchool.id) {
+      setDrawerSchool(null);
+    }
+  }, [transportSchoolId, drawerSchool?.id]);
 
   const schoolIds = useMemo(() => {
     if (!Array.isArray(schools)) return [];
@@ -61,47 +84,44 @@ export default function ExplorePage() {
     return schools.filter((s) => !!map?.[s.id]?.inCatchment);
   }, [schools, catchmentCheckBySchoolId]);
 
-  // ✅ IMPORTANT: define height in the component tree (fixes bottom white area)
-  const shellStyle = {
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    minHeight: 0,
-  };
+  const handleOpenSchoolDetails = useCallback(
+    (s) => {
+      setDrawerSchool((prev) => (prev?.id === s.id ? null : s));
+      if (transport.transportSchool?.id && transport.transportSchool.id !== s.id) {
+        transport.closeTransport();
+      }
+    },
+    [transport.transportSchool?.id, transport.closeTransport]
+  );
 
-  const bodyStyle = {
-    flex: 1,
-    display: "flex",
-    minHeight: 0,
-  };
+  const handleSchoolRowClick = useCallback(
+    (s) => {
+      setDrawerSchool((prev) => (prev && prev.id !== s.id ? null : prev));
+      if (transport.transportSchool?.id && transport.transportSchool.id !== s.id) {
+        transport.closeTransport();
+      }
+    },
+    [transport.transportSchool?.id, transport.closeTransport]
+  );
 
-  const mapWrapStyle = {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 0,
-    position: "relative",
-  };
+  const handleCloseDrawer = useCallback(() => setDrawerSchool(null), []);
 
-  // ✅ Non-breaking: width sizing moved to CSS (.v2-sidebar) via CSS vars
-  const sidebarStyle = {
-    minHeight: 0,
-    overflow: "auto",
-  };
+  const handleToggleLegend = useCallback(() => setLegendOpen((prev) => !prev), []);
 
   return (
-    <div className="v2-page" style={shellStyle}>
-   <TopBar
-  postcode={postcode}
-  // support both prop conventions (non-breaking)
-  onChangePostcode={setPostcode}
-  onSubmitPostcode={submitPostcode}
-  onPostcodeChange={setPostcode}
-  onPostcodeSubmit={submitPostcode}
-  error={homeError}
-/>
+    <div className="v2-page" style={SHELL_STYLE}>
+      <TopBar
+        postcode={postcode}
+        defaultPostcode={DEFAULT_POSTCODE}
+        onPostcodeChange={setPostcode}
+        onChangePostcode={setPostcode}
+        onPostcodeSubmit={submitPostcode}
+        onSubmitPostcode={submitPostcode}
+        error={homeError}
+      />
 
-      <div className="v2-body" style={bodyStyle}>
-        <div className="v2-sidebar" style={sidebarStyle}>
+      <div className="v2-body" style={BODY_STYLE}>
+        <div className="v2-sidebar" style={SIDEBAR_STYLE}>
           <LeftPanel
             inCatchmentSchools={inCatchmentSchools}
             catchmentCheckBySchoolId={catchmentCheckBySchoolId}
@@ -113,18 +133,29 @@ export default function ExplorePage() {
             onToggleSchool={toggleSchool}
             homeLocation={transport.homeLocation}
             transportSchool={transport.transportSchool}
-            onOpenTransport={transport.openTransportForSchool}
+            onOpenTransport={transport.toggleTransportForSchool}
             onCloseTransport={transport.closeTransport}
             onSelectRoute={transport.onSelectRoute}
             onHoverRoute={transport.onHoverRoute}
             onLeaveRoute={transport.onLeaveRoute}
             onLeaveOptionsList={transport.onLeaveOptionsList}
-            // ✅ FIX: support both naming variants in useTransportUI
-            onClearRoute={transport.clearRoute || transport.onClearRoute}
+            onClearRoute={transport.onClearRoute}
+            onOpenSchoolDetails={handleOpenSchoolDetails}
+            onSchoolRowClick={handleSchoolRowClick}
+            drawerSchoolId={drawerSchool?.id}
           />
         </div>
 
-        <div className="v2-map-wrap" style={mapWrapStyle}>
+        {drawerSchool ? (
+          <div className="v2-drawer-sidebar">
+            <SchoolDetailDrawer
+              school={drawerSchool}
+              onClose={handleCloseDrawer}
+            />
+          </div>
+        ) : null}
+
+        <div className="v2-map-wrap" style={MAP_WRAP_STYLE}>
           <MapCanvas center={homePosition} zoom={11}>
             <PanToHomeV2 position={homePosition} />
 
@@ -134,6 +165,10 @@ export default function ExplorePage() {
             <SchoolMarkersV2Layer schools={schools} />
 
             <SelectedCatchmentsLayers
+              selectedIds={selectedIds}
+              catchmentsBySchoolId={catchmentsBySchoolId}
+            />
+            <FitCatchmentBounds
               selectedIds={selectedIds}
               catchmentsBySchoolId={catchmentsBySchoolId}
             />
@@ -147,7 +182,7 @@ export default function ExplorePage() {
 
             <LegendControl
               open={legendOpen}
-              onToggle={() => setLegendOpen(!legendOpen)}
+              onToggle={handleToggleLegend}
             />
           </MapCanvas>
         </div>

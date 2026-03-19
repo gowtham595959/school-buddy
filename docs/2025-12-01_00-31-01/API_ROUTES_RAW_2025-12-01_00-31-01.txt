@@ -1,3 +1,0 @@
-/workspaces/school-buddy/server/src/routes/tiffin.js:66:router.get("/", (req, res) => {
-/workspaces/school-buddy/server/src/routes/schools.js:31:router.get("/", async (req, res) => {
-/workspaces/school-buddy/server/src/routes/catchment.js:6:router.get("/tiffin", async (req, res) => {

@@ -44,14 +44,19 @@ export default function SchoolListSection({
   catchmentCheckBySchoolId,
   catchmentLoading,
 
-  // ✅ NEW (additive): load-more + scroll container
+  // ✅ load-more + scroll container
   initialVisible,
   loadStep,
   showLoadMore,
   scrollHeight,
   emptyText,
+
+  // ✅ additive
+  onOpenDetails,
+  onRowClick,
+  drawerSchoolId,
 }) {
-  const safeItems = useMemo(() => (Array.isArray(items) ? items : []), [items]);
+  const safeItems = Array.isArray(items) ? items : [];
   const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
   const initial = useMemo(() => {
@@ -118,6 +123,11 @@ export default function SchoolListSection({
                   onToggle={onToggle}
                   onOpenTransport={onOpenTransport}
                   hoverTitle={hoverTitle}
+                  onOpenDetails={onOpenDetails}
+                  onRowClick={onRowClick}
+                  isDrawerOpen={drawerSchoolId != null && drawerSchoolId === s.id}
+                  isTransportOpen={!!transportSchool && transportSchool.id === s.id}
+                  isCatchmentSelected={safeSelectedIds.includes(s.id)}
                 />
 
                 {isOpen ? (

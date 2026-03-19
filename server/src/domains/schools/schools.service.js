@@ -13,6 +13,7 @@ async function fetchAllSchools() {
     SELECT
       id,
       name,
+      display_name,
       lat,
       lon,
       radius_km,
@@ -21,7 +22,23 @@ async function fetchAllSchools() {
       has_catchment,
       catchment_category,
       icon_url,
-      marker_style_key
+      marker_style_key,
+      website,
+      phone,
+      email,
+      address,
+      local_authority,
+      council_name,
+      school_type,
+      phase,
+      age_range,
+      boarding_type,
+      religious_affiliation,
+      selectivity_type,
+      school_code,
+      top_school,
+      fees,
+      fees_notes
     FROM schools
     ORDER BY name
   `);
