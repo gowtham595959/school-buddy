@@ -4,13 +4,15 @@ echo "====================================="
 echo "🚀 SCHOOL BUDDY - STARTUP CHECK"
 echo "====================================="
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DB_CONTAINER="schoolbuddy-postgis"
 DB_IMAGE="postgis/postgis:15-3.3"
 DB_NAME="schoolmap"
-DB_VOLUME="8514c8aeb5bf4ede1b1df4e6af7694bb556a7ce3c52e287f3acf5e4629ef51fc"
+# Use named volume for portability (local Mac + Codespaces); or bind mount: "$ROOT_DIR/.local-data/postgres"
+DB_VOLUME="${DB_VOLUME:-schoolbuddy-postgres-data}"
 
-BACKEND_DIR="/workspaces/school-buddy/server"
-FRONTEND_DIR="/workspaces/school-buddy/client"
+BACKEND_DIR="$ROOT_DIR/server"
+FRONTEND_DIR="$ROOT_DIR/client"
 
 log_section() {
   echo ""
@@ -121,6 +123,32 @@ if [ $? -ne 0 ]; then
 fi
 log_ok "Database '$DB_NAME' is accessible."
 
+# 4b) Bootstrap schema if empty (init + seed)
+TABLES_EXIST=$(docker exec "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" -tAc "SELECT 1 FROM information_schema.tables WHERE table_name='schools' LIMIT 1" 2>/dev/null || echo "")
+if [ -z "$TABLES_EXIST" ] || [ "$TABLES_EXIST" != "1" ]; then
+  log_section "Initializing database (first run)"
+  if [ -f "$ROOT_DIR/db/init.sql" ]; then
+    docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$ROOT_DIR/db/init.sql" || true
+    log_ok "init.sql applied"
+  fi
+  if [ -f "$ROOT_DIR/db/seed.sql" ]; then
+    docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$ROOT_DIR/db/seed.sql" || true
+    log_ok "seed.sql applied"
+  fi
+fi
+
+# 4c) Run migrations if any (creates catchment_definitions etc. from migrations that INSERT)
+MIGRATIONS_DIR="$ROOT_DIR/db/migrations"
+if [ -d "$MIGRATIONS_DIR" ] && [ -n "$(ls -A "$MIGRATIONS_DIR"/*.sql 2>/dev/null)" ]; then
+  log_section "Running migrations"
+  for f in "$MIGRATIONS_DIR"/*.sql; do
+    [ -f "$f" ] || continue
+    echo "  Running $(basename "$f")..."
+    docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$f" || true
+  done
+  log_ok "Migrations complete."
+fi
+
 # 5) Start backend
 log_section "Starting Backend (Node)"
 
@@ -163,6 +191,13 @@ echo ""
 echo "====================================="
 echo "🎉 ALL SERVICES RUNNING SUCCESSFULLY!"
 echo "====================================="
+
+# Start hourly auto-stop in background (runs codespace-stop.sh at each :00)
+if [ -n "$CODESPACE_NAME" ] && [ -x "$ROOT_DIR/scripts/codespace-stop-hourly.sh" ]; then
+  (sleep 10; "$ROOT_DIR/scripts/codespace-stop-hourly.sh") &
+  echo ""
+  echo "⏰ Hourly auto-stop enabled (will stop at each :00)"
+fi
 
 echo ""
 echo "📜 LOG FILE LOCATIONS:"

@@ -83,9 +83,26 @@ async function getGeometriesByHash(schoolId, catchmentKey, builtHash) {
   return rows;
 }
 
+/**
+ * Admissions policies by school (policy_url, total_intake per entry_year).
+ */
+async function getAdmissionsPolicies(schoolId) {
+  const { rows } = await db.query(
+    `
+    SELECT entry_year, year_group, total_intake, policy_url
+    FROM admissions_policies
+    WHERE school_id = $1
+    ORDER BY entry_year DESC
+    `,
+    [schoolId]
+  );
+  return rows;
+}
+
 module.exports = {
   getSchoolById,
   getActiveDefinitions,
   getAnyGeometryHashForKey,
   getGeometriesByHash,
+  getAdmissionsPolicies,
 };

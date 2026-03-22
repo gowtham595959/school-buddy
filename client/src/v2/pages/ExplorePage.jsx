@@ -151,6 +151,8 @@ export default function ExplorePage() {
             <SchoolDetailDrawer
               school={drawerSchool}
               onClose={handleCloseDrawer}
+              selectedIds={selectedIds}
+              onShowCatchment={toggleSchool}
             />
           </div>
         ) : null}

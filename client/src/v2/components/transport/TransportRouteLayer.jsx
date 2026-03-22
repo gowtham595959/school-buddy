@@ -51,7 +51,7 @@ function formatMiles(meters) {
   return `${miles.toFixed(1)} mi`;
 }
 
-// Always-visible transit label helpers (unchanged)
+// Always-visible transit label: line name, or agency (e.g. Chiltern Railways), or headsign
 function transitLineText(step) {
   const vehicleType = step?.transit?.vehicle_type;
 
@@ -66,7 +66,12 @@ function transitLineText(step) {
     step?.transit?.line?.long_name ||
     step?.transit?.line?.longName;
 
-  const text = shortName || name;
+  // Fallbacks: some rail operators (Chiltern, Thameslink) omit line.short_name/name but provide agency.name
+  const agencyName = step?.transit?.agency?.name;
+  const vehicleName = step?.transit?.vehicle_name;
+  const headsign = step?.transit?.headsign;
+
+  const text = shortName || name || agencyName || vehicleName || headsign;
   if (!text) return null;
 
   return `${vehicleEmoji(vehicleType)} ${text}`;
@@ -96,8 +101,8 @@ export default function TransportRouteLayer({ route }) {
     setZoom(map.getZoom());
   }
 
-  // ✅ Show labels only when zoomed IN enough
-  const MIN_LABEL_ZOOM = 11;
+  // Show labels when route is visible; long routes (fitBounds) zoom out to ~8–10
+  const MIN_LABEL_ZOOM = 10;
 
   const currentZoom =
     typeof zoom === "number" ? Math.round(zoom) : Math.round(map.getZoom());
@@ -286,6 +291,9 @@ export default function TransportRouteLayer({ route }) {
                     {vehicleEmoji(step.transit.vehicle_type)}{" "}
                     {step.transit.line?.short_name ||
                       step.transit.line?.name ||
+                      step.transit.agency?.name ||
+                      step.transit.vehicle_name ||
+                      step.transit.headsign ||
                       "Transit"}
                   </div>
 

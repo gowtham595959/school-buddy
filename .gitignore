@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 # Large DB backups (avoid 150MB+ commits)
 backups/schoolbuddy_backup_*.zip
 backups/db_backup_snapshot/*.backup
+
+# Codespace stop runtime files (log, skip flag)
+scripts/codespace-stop-*.log
+scripts/codespace-stop-skip.flag

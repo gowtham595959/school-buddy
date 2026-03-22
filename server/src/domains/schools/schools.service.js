@@ -30,6 +30,7 @@ async function fetchAllSchools() {
       local_authority,
       council_name,
       school_type,
+      gender_type,
       phase,
       age_range,
       boarding_type,
