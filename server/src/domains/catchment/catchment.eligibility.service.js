@@ -34,7 +34,7 @@ class CatchmentEligibilityService {
   async checkEligibilityViaV2Definitions({ school, userLocation }) {
     const { lat: userLat, lon: userLon } = userLocation;
 
-    // Load active V2 definitions for this school
+    // Load active V2 definitions for this school (latest catchment_year only)
     const defsResult = await pool.query(
       `
       SELECT
@@ -50,6 +50,12 @@ class CatchmentEligibilityService {
       FROM catchment_definitions
       WHERE school_id = $1
         AND catchment_active = true
+        AND catchment_year = (
+          SELECT MAX(catchment_year)
+          FROM catchment_definitions
+          WHERE school_id = $1
+            AND catchment_active = true
+        )
       ORDER BY catchment_priority ASC, catchment_key ASC
       `,
       [school.id]

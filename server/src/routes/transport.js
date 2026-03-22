@@ -103,6 +103,7 @@ router.post("/", async (req, res) => {
               transit: details
                 ? {
                     vehicle_type: line?.vehicle?.type ?? null,
+                    vehicle_name: line?.vehicle?.name ?? null,
 
                     line: {
                       short_name: line?.short_name ?? null,

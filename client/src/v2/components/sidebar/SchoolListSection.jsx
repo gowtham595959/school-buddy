@@ -99,7 +99,7 @@ export default function SchoolListSection({
       >
         {visibleItems.length === 0 ? (
           <div style={{ fontSize: 13, color: "#666", padding: "6px 2px" }}>
-            {emptyText || "No schools to show."}
+            {catchmentLoading ? "Loading…" : (emptyText || "No schools to show.")}
           </div>
         ) : (
           visibleItems.map((s) => {

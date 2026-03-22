@@ -24,7 +24,10 @@ router.get("/:schoolId", async (req, res) => {
       return res.status(404).json({ error: "School not found" });
     }
 
-    const definitions = await repo.getActiveDefinitions(schoolId);
+    const [definitions, admissionsPolicies] = await Promise.all([
+      repo.getActiveDefinitions(schoolId),
+      repo.getAdmissionsPolicies(schoolId),
+    ]);
 
     // Build geometries keyed by catchment_key
     const geometriesByKey = {};
@@ -61,6 +64,7 @@ return res.json({
   ok: true,
   school,
   definitions,
+  admissionsPolicies,
 
   // ✅ existing structured form (keep)
   geometriesByKey,

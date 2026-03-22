@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import * as turf from "@turf/turf";
+import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
 
 function radiusToMeters(radius, unit) {
   const r = Number(radius);
@@ -25,7 +26,7 @@ function getBoundsFromPayload(payload) {
   const schoolCenter =
     Number.isFinite(schoolLat) && Number.isFinite(schoolLon) ? [schoolLat, schoolLon] : null;
 
-  const definitions = payload.definitions || [];
+  const definitions = filterDefinitionsToLatestYear(payload.definitions || []);
   const geometriesByKey = payload.geometriesByKey || {};
 
   const allBounds = [];

@@ -1,6 +1,8 @@
 // client/src/v2/components/drawer/SchoolDetailDrawer.jsx
 
 import React, { useMemo, useState } from "react";
+import { useCatchmentForDrawer } from "../../domains/catchmentV2/useCatchmentForDrawer";
+import CatchmentPanel from "./CatchmentPanel";
 
 function isEnabledFlag(school, flag) {
   // Core principle: if a flag is missing, behave as "enabled" (non-breaking).
@@ -68,18 +70,31 @@ const DRAWER_ICONS = {
   ),
 };
 
-function Section({ title, icon, children, defaultOpen = false }) {
+function Section({ title, icon, children, defaultOpen = false, preview, onHeaderClick }) {
   const [open, setOpen] = useState(!!defaultOpen);
+
+  const handleHeaderClick = () => {
+    setOpen((v) => {
+      const next = !v;
+      if (onHeaderClick) onHeaderClick(next);
+      return next;
+    });
+  };
 
   return (
     <div className="v2-drawer-section">
       <button
         type="button"
         className="v2-drawer-section-header"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleHeaderClick}
       >
-        {icon ? <span className="v2-drawer-section-icon">{icon}</span> : null}
-        <span className="v2-drawer-section-title">{title}</span>
+        <div className="v2-drawer-section-header-left">
+          {icon ? <span className="v2-drawer-section-icon">{icon}</span> : null}
+          <span className="v2-drawer-section-title">{title}</span>
+          {preview ? (
+            <span className="v2-drawer-section-preview">{preview}</span>
+          ) : null}
+        </div>
         <span className="v2-drawer-section-chevron">{open ? "▾" : "▸"}</span>
       </button>
 
@@ -88,12 +103,13 @@ function Section({ title, icon, children, defaultOpen = false }) {
   );
 }
 
-export default function SchoolDetailDrawer({ school, onClose }) {
-  // Hooks must run before any conditional return
+export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], onShowCatchment }) {
   const enabled = useMemo(() => {
     const admissionsOk = isEnabledFlag(school, "has_admissions");
+    const hasCatchment = isEnabledFlag(school, "has_catchment");
+    const isOpenCatchment = (school?.catchment_category || "").toLowerCase() === "open";
     return {
-      catchment: admissionsOk && isEnabledFlag(school, "has_catchment"),
+      catchment: (admissionsOk && hasCatchment) || isOpenCatchment,
       exams: admissionsOk && isEnabledFlag(school, "has_exams"),
       allocations: admissionsOk && isEnabledFlag(school, "has_allocations"),
       gcse: isEnabledFlag(school, "has_results_gcse"),
@@ -103,6 +119,11 @@ export default function SchoolDetailDrawer({ school, onClose }) {
       subjects: isEnabledFlag(school, "has_subjects"),
     };
   }, [school]);
+
+  const { payload, loading, error } = useCatchmentForDrawer(
+    school?.id,
+    enabled.catchment
+  );
 
   return (
     <aside className="v2-right-drawer" aria-label="School details drawer">
@@ -128,8 +149,33 @@ export default function SchoolDetailDrawer({ school, onClose }) {
 
       <div className="v2-drawer-scroll">
         {/* 1) School Details */}
-        <Section title="School Details" icon={DRAWER_ICONS.details}>
+        <Section
+          title="School Details"
+          icon={DRAWER_ICONS.details}
+          preview={
+            (school.gender_type || school.school_type) ? (
+              <>
+                {school.gender_type && (
+                  <span
+                    className={`v2-drawer-chip v2-drawer-chip--gender v2-drawer-chip--${(
+                      school.gender_type || ""
+                    ).toLowerCase()}`}
+                  >
+                    {school.gender_type}
+                  </span>
+                )}
+                {school.school_type && (
+                  <span className="v2-drawer-chip">{school.school_type}</span>
+                )}
+              </>
+            ) : null
+          }
+        >
           <div className="v2-school-details">
+            <div className="v2-detail-row">
+              <span className="v2-detail-label">Gender</span>
+              <span className="v2-detail-value">{school.gender_type || "—"}</span>
+            </div>
             <div className="v2-detail-row">
               <span className="v2-detail-label">Age Range</span>
               <span className="v2-detail-value">{school.age_range || "—"}</span>
@@ -217,13 +263,25 @@ export default function SchoolDetailDrawer({ school, onClose }) {
 
         {/* 3) 11+ Catchment */}
         {enabled.catchment ? (
-          <Section title="11+ Catchment" icon={DRAWER_ICONS.catchment}>
-            <div className="v2-muted">
-              Connected to the V2 catchment engine.
-              <br />
-              (MVP placeholder — next step: load catchment metadata + clickable
-              priority areas.)
-            </div>
+          <Section
+            title="11+ Catchment"
+            icon={DRAWER_ICONS.catchment}
+            onHeaderClick={(isOpen) => {
+              const id = school?.id;
+              if (!id || !onShowCatchment) return;
+              const selected = selectedIds.includes(id);
+              if (isOpen && !selected) onShowCatchment(id);
+              if (!isOpen && selected) onShowCatchment(id);
+            }}
+          >
+            <CatchmentPanel
+              payload={payload}
+              school={school}
+              loading={loading}
+              error={error}
+              selectedIds={selectedIds}
+              onShowCatchment={onShowCatchment}
+            />
           </Section>
         ) : null}
 
