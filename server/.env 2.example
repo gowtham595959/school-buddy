@@ -1,0 +1,8 @@
+# Copy to server/.env and adjust.
+# Pure local + DB in Docker: compose publishes 5432 on the host — use localhost (not the container name).
+PORT=5050
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/schoolmap
+
+# Transport tab: Directions API (server-side only — never put this in the React client).
+# Google Cloud Console → APIs & Services → enable "Directions API" → create an API key.
+GOOGLE_MAPS_API_KEY=
