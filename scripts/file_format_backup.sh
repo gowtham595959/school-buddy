@@ -8,8 +8,9 @@
 # Generic, reusable, read-only.
 # --------------------------------------------------------
 
-# Project root and backup directory
-ROOT_DIR="/workspaces/school-buddy"
+# Project root and backup directory (repo-agnostic: local + Codespaces)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$ROOT_DIR/backups"
 
 # Timestamp format: 16-Dec_14_32

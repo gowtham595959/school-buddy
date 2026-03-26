@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/codespace-stop-skip.sh
+# scripts/old/codespace-stop-skip.sh
 #
 # Skips the NEXT scheduled stop (this hour only).
 # The hourly script will warn again at :55 next hour and stop at :00 next hour.

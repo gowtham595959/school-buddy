@@ -33,10 +33,69 @@ log_err() {
   echo "❌ $1"
 }
 
-# 1) Check Docker
+# Wait for Docker daemon (after launch or if already starting)
+wait_for_docker() {
+  local max_attempts="${1:-60}"
+  local i=0
+  while [ "$i" -lt "$max_attempts" ]; do
+    if docker info > /dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+    i=$((i + 1))
+    if [ $((i % 5)) -eq 0 ]; then
+      echo "   ... waiting for Docker ($((i * 2))s / $((max_attempts * 2))s max)"
+    fi
+  done
+  return 1
+}
+
+# Start Docker when possible, then wait until the CLI can talk to the daemon
+ensure_docker_running() {
+  if ! command -v docker > /dev/null 2>&1; then
+    log_err "Docker CLI not found. Install Docker Desktop: https://docker.com"
+    return 1
+  fi
+
+  if docker info > /dev/null 2>&1; then
+    return 0
+  fi
+
+  log_warn "Docker daemon is not reachable."
+
+  case "$(uname -s)" in
+    Darwin)
+      log_warn "Launching Docker Desktop (macOS)..."
+      # -g background; Docker may already be open — harmless
+      open -ga Docker 2>/dev/null || open -a Docker 2>/dev/null || {
+        log_err "Could not open Docker.app. Install/start Docker Desktop manually."
+        return 1
+      }
+      ;;
+    Linux)
+      if command -v colima >/dev/null 2>&1; then
+        log_warn "Trying: colima start"
+        colima start 2>/dev/null || true
+      else
+        log_warn "Start Docker (e.g. sudo systemctl start docker) or Docker Desktop, then re-run."
+      fi
+      ;;
+    *)
+      log_warn "Start Docker manually, then re-run this script."
+      ;;
+  esac
+
+  log_warn "Waiting for Docker to become ready (up to ~2 min)..."
+  if ! wait_for_docker 60; then
+    return 1
+  fi
+  return 0
+}
+
+# 1) Check Docker (auto-start on macOS where Docker Desktop is installed)
 log_section "Checking Docker"
-if ! docker info > /dev/null 2>&1; then
-  log_err "Docker is NOT running! Start Docker and try again."
+if ! ensure_docker_running; then
+  log_err "Docker did not become ready in time. Open Docker Desktop and try again."
   exit 1
 fi
 log_ok "Docker is running."
@@ -123,7 +182,7 @@ if [ $? -ne 0 ]; then
 fi
 log_ok "Database '$DB_NAME' is accessible."
 
-# 4b) Bootstrap schema if empty (init + seed)
+# 4b) Bootstrap schema if empty (init only — no demo schools; use backup for full v2 data)
 TABLES_EXIST=$(docker exec "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" -tAc "SELECT 1 FROM information_schema.tables WHERE table_name='schools' LIMIT 1" 2>/dev/null || echo "")
 if [ -z "$TABLES_EXIST" ] || [ "$TABLES_EXIST" != "1" ]; then
   log_section "Initializing database (first run)"
@@ -131,22 +190,20 @@ if [ -z "$TABLES_EXIST" ] || [ "$TABLES_EXIST" != "1" ]; then
     docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$ROOT_DIR/db/init.sql" || true
     log_ok "init.sql applied"
   fi
-  if [ -f "$ROOT_DIR/db/seed.sql" ]; then
-    docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$ROOT_DIR/db/seed.sql" || true
-    log_ok "seed.sql applied"
-  fi
 fi
 
-# 4c) Run migrations if any (creates catchment_definitions etc. from migrations that INSERT)
-MIGRATIONS_DIR="$ROOT_DIR/db/migrations"
-if [ -d "$MIGRATIONS_DIR" ] && [ -n "$(ls -A "$MIGRATIONS_DIR"/*.sql 2>/dev/null)" ]; then
-  log_section "Running migrations"
-  for f in "$MIGRATIONS_DIR"/*.sql; do
-    [ -f "$f" ] || continue
-    echo "  Running $(basename "$f")..."
-    docker exec -i "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" < "$f" || true
-  done
-  log_ok "Migrations complete."
+# 4c) db/migrations/*.sql are not run here (full backup = schema+data; otherwise migrate by hand).
+log_section "Database migrations"
+log_warn "Not applied on startup. New SQL from git or fresh DB beyond init.sql:"
+log_warn "  ./scripts/db_sync_azure.sh migrate"
+
+# 4d) v2 app expects real school/catchment data from a backup (no in-repo demo seed)
+SCHOOL_COUNT=$(docker exec "$DB_CONTAINER" psql -U postgres -d "$DB_NAME" -tAc "SELECT COUNT(*)::text FROM schools" 2>/dev/null || echo "0")
+SCHOOL_COUNT=$(echo "$SCHOOL_COUNT" | tr -d '[:space:]')
+if [ "${SCHOOL_COUNT:-0}" = "0" ]; then
+  log_warn "No schools in the database. For full data (e.g. 19 schools), restore a backup:"
+  log_warn "  ./scripts/db_restore_from_backup_snapshot.sh"
+  log_warn "Create a .backup in Codespace: ./scripts/db_backup_snapshot.sh → copy to backups/db_backup_snapshot/"
 fi
 
 # 5) Start backend
@@ -160,8 +217,8 @@ if [ -d "$BACKEND_DIR" ]; then
     npm install
   fi
 
-  log_ok "Starting backend with 'npm run dev'..."
-  npm run dev > "$BACKEND_DIR/backend.log" 2>&1 &
+  log_ok "Starting backend with 'npm run dev' (PORT=${PORT:-5050})..."
+  PORT="${PORT:-5050}" npm run dev > "$BACKEND_DIR/backend.log" 2>&1 &
   BACKEND_PID=$!
   log_ok "Backend started (PID: $BACKEND_PID). Logs: $BACKEND_DIR/backend.log"
 else
@@ -183,6 +240,26 @@ if [ -d "$FRONTEND_DIR" ]; then
   npm start > "$FRONTEND_DIR/frontend.log" 2>&1 &
   FRONTEND_PID=$!
   log_ok "Frontend started (PID: $FRONTEND_PID). Logs: $FRONTEND_DIR/frontend.log"
+
+  # Open browser when dev server is ready (macOS). Set OPEN_BROWSER=0 to disable.
+  FE_PORT="${CLIENT_PORT:-${PORT_FRONTEND:-3000}}"
+  FE_URL="http://127.0.0.1:${FE_PORT}/"
+  if [ "${OPEN_BROWSER:-1}" != "0" ]; then
+    case "$(uname -s)" in
+      Darwin)
+        (
+          for _ in $(seq 1 40); do
+            sleep 2
+            if curl -sf -o /dev/null "$FE_URL" 2>/dev/null; then
+              open "$FE_URL"
+              break
+            fi
+          done
+        ) &
+        log_ok "Will open $FE_URL in your browser when the dev server is ready (OPEN_BROWSER=0 to skip)."
+        ;;
+    esac
+  fi
 else
   log_err "Frontend directory '$FRONTEND_DIR' not found!"
 fi
@@ -192,9 +269,9 @@ echo "====================================="
 echo "🎉 ALL SERVICES RUNNING SUCCESSFULLY!"
 echo "====================================="
 
-# Start hourly auto-stop in background (runs codespace-stop.sh at each :00)
-if [ -n "$CODESPACE_NAME" ] && [ -x "$ROOT_DIR/scripts/codespace-stop-hourly.sh" ]; then
-  (sleep 10; "$ROOT_DIR/scripts/codespace-stop-hourly.sh") &
+# Start hourly auto-stop in background (Codespaces only — scripts/old/codespace-stop-hourly.sh)
+if [ -n "$CODESPACE_NAME" ] && [ -x "$ROOT_DIR/scripts/old/codespace-stop-hourly.sh" ]; then
+  (sleep 10; "$ROOT_DIR/scripts/old/codespace-stop-hourly.sh") &
   echo ""
   echo "⏰ Hourly auto-stop enabled (will stop at each :00)"
 fi

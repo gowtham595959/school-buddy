@@ -75,29 +75,9 @@ CREATE TABLE postcodes (
 CREATE INDEX IF NOT EXISTS postcodes_geom_idx ON postcodes USING GIST (geom);
 ```
 
-### Run the seed data
+### Load full school data
 
-Paste and run `db/seed.sql` in the SQL Editor:
-
-```sql
-INSERT INTO schools (name, lat, lon) VALUES
-  ('Tiffin Girls', 51.4172, -0.2928),
-  ('Nonsuch',      51.355417, -0.223868),
-  ('Wallington',   51.348,    -0.1488)
-ON CONFLICT (name) DO NOTHING;
-
-UPDATE schools
-SET geom = ST_SetSRID(ST_MakePoint(lon, lat), 4326)
-WHERE geom IS NULL;
-
-INSERT INTO catchments (school_id, radius_m)
-SELECT id, 5250 FROM schools WHERE name = 'Nonsuch'
-ON CONFLICT DO NOTHING;
-
-INSERT INTO catchments (school_id, radius_m)
-SELECT id, 6700 FROM schools WHERE name = 'Wallington'
-ON CONFLICT DO NOTHING;
-```
+There is no in-repo demo seed. Use a **`pg_restore`** backup from production/Azure/Codespace, or run migrations plus your own bulk import. For local Docker, place a `.backup` under `backups/db_backup_snapshot/` and run `./scripts/db_restore_from_backup_snapshot.sh`.
 
 ### Get the connection string
 

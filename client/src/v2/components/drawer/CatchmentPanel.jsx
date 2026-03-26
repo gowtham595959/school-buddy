@@ -196,6 +196,7 @@ export default function CatchmentPanel({ payload, school, loading, error, select
             ) : null}
           </div>
         ) : null}
+
         {definitionsForYear.map((def, idx) => (
           <DefinitionBlock
             key={`${def.catchment_key}-${def.catchment_priority}-${idx}`}

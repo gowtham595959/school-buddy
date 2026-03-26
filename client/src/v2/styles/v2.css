@@ -428,13 +428,38 @@ html, body, #root {
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
+  gap: 8px;
+  text-align: left;
+}
+
+.v2-drawer-section-header-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   color: inherit;
-  text-align: left;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.v2-drawer-section-header-chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
 }
 
 .v2-drawer-section-header-left {
@@ -464,6 +489,29 @@ html, body, #root {
   gap: 26px;
   margin-left: 16px;
   min-width: 0;
+}
+
+/* Exam row: let subjects chip use remaining width for one-line auto-fit */
+.v2-drawer-section-preview--exam-fit {
+  flex: 1 1 0;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* 11+ exam subjects: consume remaining header width so auto-fit can measure */
+.v2-drawer-chip-exam-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+.v2-drawer-chip--exam-subjects {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: middle;
+  box-sizing: border-box;
+  padding-inline: 12px;
 }
 
 .v2-drawer-chip {
@@ -496,8 +544,39 @@ html, body, #root {
   color: #374151;
 }
 
-.v2-drawer-section-chevron {
-  flex-shrink: 0;
+/* Open seats (11+ Catchment header) — grammar-style pill + tier colours */
+.v2-drawer-chip--open-seats {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.v2-drawer-chip--open-seats-neutral {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.v2-drawer-chip--open-seats-green {
+  background: #ecfdf5;
+  border-color: #34d399;
+  color: #047857;
+}
+
+.v2-drawer-chip--open-seats-amber {
+  background: #fffbeb;
+  border-color: #fbbf24;
+  color: #b45309;
+}
+
+.v2-drawer-chip--open-seats-red {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #b91c1c;
+}
+
+.v2-drawer-section-chevron-icon {
   color: #999;
   font-size: 12px;
 }
@@ -641,11 +720,19 @@ html, body, #root {
 }
 
 .v2-catchment-year-btn--active {
+  position: relative;
+  z-index: 1;
   background: #fff;
-  color: #333;
-  border-color: #c4c4c4;
+  color: #1d4ed8;
+  font-weight: 600;
+  /* Softer “sheet” border + stronger top edge so the selected year reads clearly */
+  border-color: #93c5fd;
+  border-top-width: 2px;
+  border-top-color: #2563eb;
   margin-bottom: -1px;
+  padding-top: 5px;
   padding-bottom: 7px;
+  box-shadow: 0 -2px 8px rgba(37, 99, 235, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 
 .v2-catchment-content {
@@ -663,6 +750,82 @@ html, body, #root {
 
 .v2-catchment-priority-block {
   margin-top: 16px;
+}
+
+/* 11+ Exam panel (reuses catchment shell + year tabs) */
+.v2-exam-stages-wrap .v2-exam-stage-block:first-child {
+  margin-top: 8px;
+}
+
+.v2-exam-stages-wrap .v2-exam-stage-block + .v2-exam-stage-block {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.v2-exam-stage-block .v2-detail-section-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+/* Test conducted by: honour newlines; 2nd line aligns with start of value column */
+.v2-exam-authority-value {
+  white-space: pre-line;
+}
+
+/* Exam subjects: same grid row as other fields; subject names italic */
+.v2-exam-subjects-row .v2-detail-value {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.v2-exam-subjects-row .v2-detail-label {
+  font-weight: 600;
+}
+
+.v2-exam-subjects-name {
+  font-style: italic;
+  font-weight: 400;
+  color: #0f172a;
+}
+
+.v2-exam-subjects-note {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.v2-exam-subjects-sep {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.v2-exam-stage-list,
+.v2-exam-criteria-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: #333;
+  line-height: 1.45;
+}
+
+.v2-exam-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.v2-exam-table th,
+.v2-exam-table td {
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.v2-exam-table th {
+  background: #f3f4f6;
+  font-weight: 600;
 }
 
 .v2-link-row {

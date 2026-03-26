@@ -89,7 +89,7 @@ If you have a backup from Codespaces or a teammate:
 # Then download the backup and copy it to your Mac
 ```
 
-Without a backup, the app runs with basic seed data (3 schools, minimal catchments).
+Without a backup, the database has schema only — restore a `.backup` for full schools/catchments (see `db_restore_from_backup_snapshot.sh`).
 
 ---
 
@@ -98,7 +98,7 @@ Without a backup, the app runs with basic seed data (3 schools, minimal catchmen
 | Action | Command |
 |--------|---------|
 | Start app | `cd .../school-buddy && ./scripts/startup.sh` |
-| Stop | `Ctrl+C` or `./scripts/codespace-stop.sh` |
+| Stop | `Ctrl+C` or `./scripts/old/codespace-stop.sh` |
 | Migrations | `./scripts/db_sync_azure.sh migrate` |
 | Restore DB | `./scripts/db_restore_from_backup_snapshot.sh` |
 

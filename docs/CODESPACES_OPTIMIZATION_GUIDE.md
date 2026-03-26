@@ -90,9 +90,9 @@ If your Codespaces bill appears under GitHub billing, Azure is not involved. Azu
 
 1. **Run the stop script** (recommended)
    ```bash
-   ./scripts/codespace-stop.sh
+   ./scripts/old/codespace-stop.sh
    ```
-   This stops frontend + backend (ports 3000, 5000) and then stops the Codespace.
+   This stops frontend + backend (ports 3000, 5050) and then stops the Codespace.
 
 2. **Or stop manually**
    - GitHub → [github.com/codespaces](https://github.com/codespaces) → ⋮ → **Stop**
@@ -137,7 +137,7 @@ If your Codespaces bill appears under GitHub billing, Azure is not involved. Azu
 
 ### When you finish (stop everything)
 ```bash
-./scripts/codespace-stop.sh
+./scripts/old/codespace-stop.sh
 ```
 Stops backend, frontend, and the Codespace.
 
@@ -149,7 +149,7 @@ Stops backend, frontend, and the Codespace.
 
 ## 7. Hourly Auto-Stop
 
-When you run `./scripts/startup.sh`, a background script starts that runs `codespace-stop.sh` at each :00 (top of every hour). No cron needed.
+When you run `./scripts/startup.sh`, a background script starts that runs `scripts/old/codespace-stop.sh` at each :00 (top of every hour). No cron needed.
 
 ### Worst that can happen if it stops while you're working
 

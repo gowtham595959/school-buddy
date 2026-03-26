@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
-# scripts/codespace-stop-hourly.sh
+# scripts/old/codespace-stop-hourly.sh — GitHub Codespaces only.
 #
 # Runs in background. Every minute, checks if it's :00 (top of hour).
 # At :55, shows a 5-minute warning. At :00, runs codespace-stop.sh.
 # No cron needed.
 #
-# Started automatically by startup.sh. To disable, don't run startup.sh's
-# background launch, or kill this process.
+# Started automatically by startup.sh (when CODESPACE_NAME is set).
+# To disable, or kill this process.
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STOP_SCRIPT="$ROOT_DIR/scripts/codespace-stop.sh"
-LOG="$ROOT_DIR/scripts/codespace-stop-hourly.log"
-SKIP_FLAG="$ROOT_DIR/scripts/codespace-stop-skip.flag"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STOP_SCRIPT="$SCRIPT_DIR/codespace-stop.sh"
+LOG="$SCRIPT_DIR/codespace-stop-hourly.log"
+SKIP_FLAG="$SCRIPT_DIR/codespace-stop-skip.flag"
 
 log() { echo "[$(date -Iseconds)] $*" >> "$LOG"; }
 
 # Show warning in all open terminals (and try wall if available)
 show_warning() {
+  local skip_path="$SCRIPT_DIR/codespace-stop-skip.sh"
   local msg="
 ================================================================================
   WARNING: Codespace will STOP in 5 minutes! Save your work!
   To skip THIS hour only, run:
-  /workspaces/school-buddy/scripts/codespace-stop-skip.sh
+  $skip_path
   To cancel completely, run:
   pkill -f codespace-stop-hourly
 ================================================================================
@@ -35,7 +36,7 @@ show_warning() {
     echo -e "\n\033[1;31m$msg\033[0m\n" > "$tty" 2>/dev/null || true
   done
   # Try wall (broadcasts to all users' terminals)
-  echo "WARNING: Codespace will STOP in 5 minutes! Save your work! To skip: /workspaces/school-buddy/scripts/codespace-stop-skip.sh" | wall 2>/dev/null || true
+  echo "WARNING: Codespace will STOP in 5 minutes! Save your work! To skip: $skip_path" | wall 2>/dev/null || true
 }
 
 log "Started. Will run codespace-stop.sh at each :00 (warning at :55)"

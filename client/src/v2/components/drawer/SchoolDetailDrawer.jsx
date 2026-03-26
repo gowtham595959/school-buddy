@@ -1,8 +1,16 @@
 // client/src/v2/components/drawer/SchoolDetailDrawer.jsx
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useCallback, useLayoutEffect } from "react";
 import { useCatchmentForDrawer } from "../../domains/catchmentV2/useCatchmentForDrawer";
+import { useAdmissionsPolicies } from "../../domains/admissions/useAdmissionsPolicies";
+import { getOpenSeatsHeaderChipInfo } from "../../utils/catchmentOpenSeatsPreview";
+import {
+  pickLatestAdmissionPolicy,
+  formatExamSubjectsChipFromPolicy,
+} from "../../utils/examDetailsUtils";
 import CatchmentPanel from "./CatchmentPanel";
+import ExamDetailsPanel from "./ExamDetailsPanel";
+import AllocationPanel from "./AllocationPanel";
 
 function isEnabledFlag(school, flag) {
   // Core principle: if a flag is missing, behave as "enabled" (non-breaking).
@@ -70,7 +78,75 @@ const DRAWER_ICONS = {
   ),
 };
 
-function Section({ title, icon, children, defaultOpen = false, preview, onHeaderClick }) {
+const EXAM_CHIP_FS_MAX = 12;
+const EXAM_CHIP_FS_MIN = 8;
+
+/** Single-line exam subjects chip: stays default size for short labels, scales down when needed. */
+function ExamSubjectsHeaderChip({ label }) {
+  const wrapRef = useRef(null);
+  const chipRef = useRef(null);
+
+  const fit = useCallback(() => {
+    const wrap = wrapRef.current;
+    const chip = chipRef.current;
+    if (!wrap || !chip || !label) return;
+
+    chip.style.fontSize = "";
+    chip.style.padding = "";
+    chip.style.paddingInline = "";
+    chip.style.lineHeight = "";
+
+    const avail = wrap.clientWidth;
+    if (avail <= 1) return;
+
+    let fs = EXAM_CHIP_FS_MAX;
+    chip.style.fontSize = `${fs}px`;
+    void chip.offsetHeight;
+
+    while (fs > EXAM_CHIP_FS_MIN && chip.offsetWidth > avail) {
+      fs -= 0.5;
+      chip.style.fontSize = `${fs}px`;
+      void chip.offsetHeight;
+    }
+
+    if (fs < EXAM_CHIP_FS_MAX) {
+      const t = (EXAM_CHIP_FS_MAX - fs) / (EXAM_CHIP_FS_MAX - EXAM_CHIP_FS_MIN);
+      const padY = Math.max(4, Math.round(5 - t * 1.5));
+      chip.style.paddingBlock = `${padY}px`;
+      chip.style.paddingInline = "12px";
+      chip.style.lineHeight = "1.2";
+    }
+  }, [label]);
+
+  useLayoutEffect(() => {
+    fit();
+    const wrap = wrapRef.current;
+    if (!wrap || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(fit);
+    });
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [fit]);
+
+  return (
+    <div className="v2-drawer-chip-exam-wrap" ref={wrapRef}>
+      <span ref={chipRef} className="v2-drawer-chip v2-drawer-chip--exam-subjects">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+  preview,
+  previewClassName,
+  onHeaderClick,
+}) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   const handleHeaderClick = () => {
@@ -83,20 +159,33 @@ function Section({ title, icon, children, defaultOpen = false, preview, onHeader
 
   return (
     <div className="v2-drawer-section">
-      <button
-        type="button"
-        className="v2-drawer-section-header"
-        onClick={handleHeaderClick}
-      >
+      <div className="v2-drawer-section-header">
         <div className="v2-drawer-section-header-left">
-          {icon ? <span className="v2-drawer-section-icon">{icon}</span> : null}
-          <span className="v2-drawer-section-title">{title}</span>
+          <button
+            type="button"
+            className="v2-drawer-section-header-trigger"
+            onClick={handleHeaderClick}
+          >
+            {icon ? <span className="v2-drawer-section-icon">{icon}</span> : null}
+            <span className="v2-drawer-section-title">{title}</span>
+          </button>
           {preview ? (
-            <span className="v2-drawer-section-preview">{preview}</span>
+            <span
+              className={["v2-drawer-section-preview", previewClassName].filter(Boolean).join(" ")}
+            >
+              {preview}
+            </span>
           ) : null}
         </div>
-        <span className="v2-drawer-section-chevron">{open ? "▾" : "▸"}</span>
-      </button>
+        <button
+          type="button"
+          className="v2-drawer-section-header-chevron"
+          onClick={handleHeaderClick}
+          aria-label={open ? "Collapse section" : "Expand section"}
+        >
+          <span className="v2-drawer-section-chevron-icon">{open ? "▾" : "▸"}</span>
+        </button>
+      </div>
 
       {open ? <div className="v2-drawer-section-body">{children}</div> : null}
     </div>
@@ -124,6 +213,26 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
     school?.id,
     enabled.catchment
   );
+
+  const admissionsPoliciesEnabled = enabled.exams || enabled.allocations;
+  const {
+    policies: admissionsPolicies,
+    loading: admissionsLoading,
+    error: admissionsError,
+  } = useAdmissionsPolicies(school?.id, admissionsPoliciesEnabled);
+
+  const catchmentOpenSeatsChip = useMemo(() => {
+    if (!enabled.catchment || loading || error || !payload) return null;
+    return getOpenSeatsHeaderChipInfo(payload, school);
+  }, [enabled.catchment, loading, error, payload, school]);
+
+  const examHeaderPreview = useMemo(() => {
+    if (!enabled.exams || admissionsLoading || admissionsError) return null;
+    const policy = pickLatestAdmissionPolicy(admissionsPolicies);
+    const subjectsLabel = formatExamSubjectsChipFromPolicy(policy);
+    if (!subjectsLabel) return null;
+    return <ExamSubjectsHeaderChip label={subjectsLabel} />;
+  }, [enabled.exams, admissionsLoading, admissionsError, admissionsPolicies]);
 
   return (
     <aside className="v2-right-drawer" aria-label="School details drawer">
@@ -173,20 +282,12 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         >
           <div className="v2-school-details">
             <div className="v2-detail-row">
-              <span className="v2-detail-label">Gender</span>
-              <span className="v2-detail-value">{school.gender_type || "—"}</span>
-            </div>
-            <div className="v2-detail-row">
               <span className="v2-detail-label">Age Range</span>
               <span className="v2-detail-value">{school.age_range || "—"}</span>
             </div>
             <div className="v2-detail-row">
               <span className="v2-detail-label">Phase</span>
               <span className="v2-detail-value">{school.phase || "—"}</span>
-            </div>
-            <div className="v2-detail-row">
-              <span className="v2-detail-label">Type</span>
-              <span className="v2-detail-value">{school.school_type || "—"}</span>
             </div>
             <div className="v2-detail-row">
               <span className="v2-detail-label">Website</span>
@@ -266,6 +367,15 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
           <Section
             title="11+ Catchment"
             icon={DRAWER_ICONS.catchment}
+            preview={
+              catchmentOpenSeatsChip ? (
+                <span
+                  className={`v2-drawer-chip v2-drawer-chip--open-seats v2-drawer-chip--open-seats-${catchmentOpenSeatsChip.tier}`}
+                >
+                  {catchmentOpenSeatsChip.label}
+                </span>
+              ) : null
+            }
             onHeaderClick={(isOpen) => {
               const id = school?.id;
               if (!id || !onShowCatchment) return;
@@ -287,20 +397,28 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
 
         {/* 4) 11+ Exam Details */}
         {enabled.exams ? (
-          <Section title="11+ Exam Details" icon={DRAWER_ICONS.exam}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: normalized tests → sessions → papers →
-              subjects.)
-            </div>
+          <Section
+            title="11+ Exam Details"
+            icon={DRAWER_ICONS.exam}
+            preview={examHeaderPreview}
+            previewClassName="v2-drawer-section-preview--exam-fit"
+          >
+            <ExamDetailsPanel
+              policies={admissionsPolicies}
+              loading={admissionsLoading}
+              error={admissionsError}
+            />
           </Section>
         ) : null}
 
-        {/* 5) 11+ Allocation data */}
+        {/* 5) 11+ Allocation details */}
         {enabled.allocations ? (
-          <Section title="11+ Allocation data" icon={DRAWER_ICONS.allocation}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: annual allocation stats table.)
-            </div>
+          <Section title="11+ Allocation details" icon={DRAWER_ICONS.allocation}>
+            <AllocationPanel
+              policies={admissionsPolicies}
+              loading={admissionsLoading}
+              error={admissionsError}
+            />
           </Section>
         ) : null}
 

@@ -36,15 +36,21 @@ This installs npm dependencies for root, client, and server.
 
 This will:
 - Create/start the PostGIS Docker container
-- Run database init and migrations
-- Start backend (port 5000) and frontend (port 3000)
+- Run `db/init.sql` only if the DB has no `schools` table yet (migrations are **not** run — use `./scripts/db_sync_azure.sh migrate` or a backup restore)
+- Start backend (port 5050 by default — macOS reserves 5000 for AirPlay) and frontend (port 3000)
 
 ---
 
 ## 4. Open in browser
 
 - **App:** http://localhost:3000
-- **API:** http://localhost:5000
+- **API:** http://localhost:5050 (or set `PORT` in `server/.env`; Azure/production still uses `PORT=5000` inside the container)
+
+### Pure local + database in Docker (typical Mac setup)
+
+- **Node and React run on your Mac**; **only Postgres runs in Docker** (`docker compose` maps **5432 → localhost**).
+- **`server/.env`:** `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/schoolmap` (see `server/.env.example`).
+- **Cursor / VS Code “Ports”:** With a normal local folder, that panel is for **remote** dev; it can stay empty. You do **not** need port forwarding — open the URLs above in your browser. SQLTools already uses `127.0.0.1:5432`, which is correct for a published Docker port.
 
 ---
 
@@ -56,15 +62,15 @@ For a fully working app with catchment data, you need to restore from a backup:
 ./scripts/db_restore_from_backup_snapshot.sh
 ```
 
-Use a `.backup` file from `backups/db_backup_snapshot/` or from a teammate.  
-If you don’t have a backup, the app will run with basic school data from init/seed.
+Use a `.backup` file from `backups/db_backup_snapshot/`, Azure, or Codespace (`./scripts/db_backup_snapshot.sh`).  
+Without a restore, `schools` stays empty until you load a backup (migrations do not insert demo schools).
 
 ---
 
 ## 6. Stop when done
 
 - Press **Ctrl+C** in the terminal where `startup.sh` is running
-- Or run: `./scripts/codespace-stop.sh` (stops services; no Codespace locally)
+- Or run: `./scripts/old/codespace-stop.sh` (stops services; Codespace only if `CODESPACE_NAME` is set)
 
 ---
 
@@ -74,7 +80,7 @@ If you don’t have a backup, the app will run with basic school data from init/
 school-buddy/
 ├── client/          # React frontend
 ├── server/           # Node backend
-├── db/               # init, seed, migrations
+├── db/               # init, migrations
 ├── scripts/          # setup-local-mac.sh, startup.sh, etc.
 └── LOCAL_SETUP.md    # this file
 ```
@@ -89,4 +95,4 @@ school-buddy/
 | Start app | `./scripts/startup.sh` |
 | Run migrations only | `./scripts/db_sync_azure.sh migrate` |
 | Restore from backup | `./scripts/db_restore_from_backup_snapshot.sh` |
-| Stop | `./scripts/codespace-stop.sh` |
+| Stop | `./scripts/old/codespace-stop.sh` |

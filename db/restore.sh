@@ -1,5 +1,14 @@
-#!/bin/bash
+#!/bin/sh
 set -e
+
+BACKUP="/docker-backup/restore.backup"
+if [ ! -f "$BACKUP" ]; then
+  echo "======================================"
+  echo "No backup at $BACKUP - skipping restore"
+  echo "Schema from init.sql + migrations"
+  echo "======================================"
+  exit 0
+fi
 
 echo "======================================"
 echo "Restoring SchoolBuddy database backup"
@@ -10,7 +19,7 @@ pg_restore \
   --dbname="$POSTGRES_DB" \
   --no-owner \
   --no-privileges \
-  /docker-backup/restore.backup
+  "$BACKUP"
 
 echo "======================================"
 echo "Database restore complete"

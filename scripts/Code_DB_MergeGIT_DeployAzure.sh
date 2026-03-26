@@ -11,9 +11,9 @@
 #   merge-main          Merge feature branch → main and push
 #   all "message"       Full: stage, commit, push, merge-main
 #
-# DB (Azure sync):
+# DB (Azure sync — uses local Docker schoolbuddy-postgis, same on Mac or Codespace):
 #   db-migrations       Run migrations on local Docker DB
-#   db-full             Full sync: backup → upload to Azure → restart
+#   db-full             Local DB → pg_dump → upload restore.backup → restart Azure Web App
 #
 # Usage: ./scripts/Code_DB_MergeGIT_DeployAzure.sh [command] [args]
 # --------------------------------------------------------
@@ -225,7 +225,7 @@ do_db_migrations() {
 }
 
 do_db_full() {
-  log_section "DB: Full sync Codespace → Azure"
+  log_section "DB: Full sync local Docker → Azure"
 
   if [ -z "$AZURE_STORAGE_ACCOUNT" ]; then
     log_err "AZURE_STORAGE_ACCOUNT not set. Source scripts/azure.env"
