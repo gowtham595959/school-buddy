@@ -7,8 +7,12 @@
 #   ./scripts/db_sync_azure.sh backup    # Create backup (calls db_backup_snapshot.sh)
 #   ./scripts/db_sync_azure.sh upload   # Upload latest backup to Azure Files
 #   ./scripts/db_sync_azure.sh full     # migrate + backup + upload
+#   ./scripts/db_sync_azure.sh download # pull restore.backup from Azure Files → backups/
 #
-# For upload/full, set:
+# Optional: copy scripts/azure.env.example → scripts/azure.env (gitignored) and set vars.
+# Do not commit secrets. For download/upload you can use `az login` instead of a storage key.
+#
+# For upload/download/full, set:
 #   AZURE_STORAGE_ACCOUNT  — Storage account name
 #   AZURE_STORAGE_KEY      — Storage account key (or use az login)
 #   AZURE_BACKUP_SHARE    — Share name (default: postgres-backup)
@@ -20,6 +24,13 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$SCRIPT_DIR/azure.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/azure.env"
+  set +a
+fi
 MIGRATIONS_DIR="$PROJECT_ROOT/db/migrations"
 BACKUP_DIR="$PROJECT_ROOT/backups/db_backup_snapshot"
 
@@ -54,12 +65,12 @@ do_migrate() {
   fi
 
   count=0
-  for f in "$MIGRATIONS_DIR"/*.sql; do
+  while IFS= read -r f; do
     [ -f "$f" ] || continue
     echo "  Running $(basename "$f")..."
-    docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" < "$f"
+    docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < "$f" || exit 1
     count=$((count + 1))
-  done
+  done < <(ls -1 "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort)
 
   if [ "$count" -eq 0 ]; then
     log_warn "No migration files found."
@@ -123,20 +134,60 @@ do_upload() {
   fi
 }
 
+do_download() {
+  log_section "Downloading restore.backup from Azure Files"
+
+  if ! command -v az &>/dev/null; then
+    log_err "Azure CLI (az) not found. Install: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli"
+    exit 1
+  fi
+
+  if [ -z "$AZURE_STORAGE_ACCOUNT" ]; then
+    log_err "Set AZURE_STORAGE_ACCOUNT in scripts/azure.env or the environment."
+    exit 1
+  fi
+
+  mkdir -p "$BACKUP_DIR"
+  dest="$BACKUP_DIR/restore_from_azure.backup"
+  echo "  Share: $SHARE_NAME  path: restore.backup  →  $dest"
+
+  if [ -n "$AZURE_STORAGE_KEY" ]; then
+    az storage file download \
+      --account-name "$AZURE_STORAGE_ACCOUNT" \
+      --account-key "$AZURE_STORAGE_KEY" \
+      --share-name "$SHARE_NAME" \
+      --path restore.backup \
+      --dest "$dest"
+  else
+    az storage file download \
+      --account-name "$AZURE_STORAGE_ACCOUNT" \
+      --share-name "$SHARE_NAME" \
+      --path restore.backup \
+      --dest "$dest"
+  fi
+
+  log_ok "Downloaded. Restore locally with:"
+  log_ok "  ./scripts/db_restore_from_backup_snapshot.sh"
+  log_ok "  (choose restore_from_azure.backup when prompted)"
+}
+
 show_help() {
-  echo "Usage: $0 {migrate|backup|upload|full}"
+  echo "Usage: $0 {migrate|backup|upload|download|full}"
   echo ""
-  echo "  migrate   Run db/migrations/*.sql on local Docker DB"
-  echo "  backup    Create backup (db_backup_snapshot.sh)"
-  echo "  upload    Upload latest backup to Azure Files, restart Web App"
-  echo "  full      migrate → backup → upload"
+  echo "  migrate    Run db/migrations/*.sql on local Docker DB"
+  echo "  backup     Create backup (db_backup_snapshot.sh)"
+  echo "  upload     Upload latest backup to Azure Files, restart Web App"
+  echo "  download   Download Azure Files restore.backup → backups/db_backup_snapshot/restore_from_azure.backup"
+  echo "  full       migrate → backup → upload"
   echo ""
-  echo "For upload/full, set:"
+  echo "Put non-secret + secret vars in scripts/azure.env (see azure.env.example). Optional: az login instead of key."
+  echo ""
+  echo "For upload/download/full, set:"
   echo "  AZURE_STORAGE_ACCOUNT   Storage account name"
-  echo "  AZURE_STORAGE_KEY      Storage key (optional if az login)"
+  echo "  AZURE_STORAGE_KEY      Storage key (optional if az login + RBAC)"
   echo "  AZURE_BACKUP_SHARE     Share name (default: postgres-backup)"
-  echo "  AZURE_WEBAPP_NAME      Web App name (default: school-buddy-app)"
-  echo "  AZURE_WEBAPP_RG        Resource group (default: school-buddy-rg)"
+  echo "  AZURE_WEBAPP_NAME      Web App name (default: school-buddy)"
+  echo "  AZURE_WEBAPP_RG        Resource group (default: Schoolbuddy-dev-01)"
   echo ""
   echo "See docs/DB_SYNC_AZURE.md for full workflow."
 }
@@ -153,6 +204,9 @@ case "${1:-}" in
     ;;
   upload)
     do_upload
+    ;;
+  download)
+    do_download
     ;;
   full)
     do_migrate

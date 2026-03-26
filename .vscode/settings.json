@@ -1,15 +1,17 @@
 {
     "sqltools.connections": [
         {
-            "ssh": "Disabled",
-            "previewLimit": 50,
+            "id": "schoolmap-docker",
+            "name": "School Map - SQL Tools (Docker PostGIS)",
+            "driver": "PostgreSQL",
             "server": "127.0.0.1",
             "port": 5432,
-            "driver": "PostgreSQL",
-            "name": "School Map - SQL Tools",
             "database": "schoolmap",
             "username": "postgres",
-            "password": "postgres"
+            "password": "postgres",
+            "ssh": "Disabled",
+            "connectionTimeout": 30,
+            "previewLimit": 50
         }
     ]
 }

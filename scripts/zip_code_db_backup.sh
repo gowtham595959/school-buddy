@@ -4,11 +4,12 @@
 # excluding heavy or irrelevant folders.
 # Then run DB and code-format backups.
 #
-# All outputs stored in:
-#   /workspaces/school-buddy/backups/
+# All outputs stored in: <repo>/backups/
+# Works on local Mac, Linux, and GitHub Codespaces (same repo path resolution).
 # --------------------------------------------------------
 
-ROOT_DIR="/workspaces/school-buddy"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$ROOT_DIR/backups"
 
 # Unified timestamp format: 16-Dec_15_44

@@ -3,7 +3,12 @@ import geopandas as gpd
 from shapely.ops import unary_union
 import os
 
-ROOT = "/workspaces/school-buddy/gis/postcode_geojson"
+_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+_CANDIDATE_DIRS = (
+    os.path.join(_REPO_ROOT, "gis", "postcode_geojson"),
+    os.path.join(_REPO_ROOT, "gis_backup", "postcode_geojson"),
+)
+ROOT = next((p for p in _CANDIDATE_DIRS if os.path.isdir(p)), _CANDIDATE_DIRS[0])
 
 TIFFIN_CODES = [
     "KT1","KT2","KT3","KT4","KT5","KT6","KT7","KT8","KT9","KT10","KT12","KT13","KT17","KT19",

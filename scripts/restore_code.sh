@@ -3,10 +3,13 @@
 # ==========================================
 # RESTORE SCRIPT FOR SCHOOL-BUDDY (CODE ONLY)
 # ==========================================
+# Repo root from script location (local Mac, Linux, Codespaces).
 
-BACKUP_DIR="/workspaces/school-buddy/backups"
-TARGET_DIR="/workspaces/school-buddy"
-TEMP_DIR="/workspaces/school-buddy/restore_temp"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKUP_DIR="$ROOT_DIR/backups"
+TARGET_DIR="$ROOT_DIR"
+TEMP_DIR="$ROOT_DIR/restore_temp"
 
 # Safety backup of current code (ZIP)
 SAFETY_TIMESTAMP=$(date +"%d-%b_%H_%M")

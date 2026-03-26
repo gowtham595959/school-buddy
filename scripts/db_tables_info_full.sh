@@ -3,11 +3,14 @@
 # ==============================
 # CONFIG
 # ==============================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 CONTAINER="schoolbuddy-postgis"
 DB="schoolmap"
 USER="postgres"
 
-BACKUP_DIR="/workspaces/school-buddy/backups"
+BACKUP_DIR="$ROOT_DIR/backups"
 TIMESTAMP=$(date +"%d-%b_%H_%M")
 OUTFILE="$BACKUP_DIR/db_table_all_$TIMESTAMP.txt"
 

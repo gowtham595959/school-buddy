@@ -145,6 +145,8 @@ vite.config.ts.timestamp-*
 backups/schoolbuddy_backup_*.zip
 backups/db_backup_snapshot/*.backup
 
-# Codespace stop runtime files (log, skip flag)
+# Codespace stop runtime files (log, skip flag) — scripts/old/ + legacy paths in scripts/
+scripts/old/codespace-stop-*.log
+scripts/old/codespace-stop-skip.flag
 scripts/codespace-stop-*.log
 scripts/codespace-stop-skip.flag

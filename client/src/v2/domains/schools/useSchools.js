@@ -6,9 +6,14 @@ export function useSchools() {
 
   useEffect(() => {
     (async () => {
-      const data = await fetchSchools();
-      setSchools(data);
-    })().catch(console.error);
+      try {
+        const data = await fetchSchools();
+        setSchools(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Schools API failed:", e?.message || e);
+        setSchools([]);
+      }
+    })();
   }, []);
 
   const schoolsNear = useMemo(() => schools.slice(0, 10), [schools]);

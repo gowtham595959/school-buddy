@@ -11,9 +11,9 @@ const { Pool } = require("pg");
 const path = require("path");
 const dotenv = require("dotenv");
 
-// Load environment variables from server/.env
+// Load environment variables from server/.env (this file lives in server/src/db/)
 dotenv.config({
-  path: path.join(__dirname, "../.env"), // resolves to server/.env
+  path: path.join(__dirname, "../../.env"),
 });
 
 // Connection string to Postgres

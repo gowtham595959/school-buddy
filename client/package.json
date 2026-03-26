@@ -2,7 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:5000",
+  "proxy": "http://localhost:5050",
   "dependencies": {
     "@mapbox/polylabel": "^1.0.2",
     "@mapbox/polyline": "^1.2.1",

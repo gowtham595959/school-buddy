@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# scripts/codespace-stop.sh
+# scripts/old/codespace-stop.sh — GitHub Codespaces only (optional for local Mac).
 #
 # Stops all services started by startup.sh (backend, frontend)
 # and then stops the GitHub Codespace to avoid compute charges.
 #
 # Services stopped (from startup.sh / codeRestart.sh):
 #   - Frontend (React) on port 3000
-#   - Backend (Node) on port 5000
+#   - Backend (Node) on port 5050 (default; avoid macOS AirPlay on 5000)
 #   - PostGIS Docker container (optional, kept running by default for faster restart)
 #
 # WHEN YOU COME BACK:
 #   1. Open Cursor (or VS Code) → Remote-SSH → Connect to your Codespace
 #      (This will START the Codespace if it's stopped)
-#   2. Run: ./scripts/startup.sh
+#   2. Run: ./scripts/startup.sh from repo root
 #   3. You're ready to code!
 #
 # Or from terminal (if gh CLI is installed locally):
@@ -20,8 +20,6 @@
 #   Then connect via Cursor/VS Code and run ./scripts/startup.sh
 
 set -e
-
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "========================================"
 echo " 🛑 SCHOOL BUDDY — STOP CODESPACE"
@@ -60,8 +58,9 @@ kill_port() {
 section "Stopping FRONTEND (port 3000)"
 kill_port 3000
 
-# ---------- Stop backend (port 5000) ----------
-section "Stopping BACKEND (port 5000)"
+# ---------- Stop backend (5050 + legacy 5000) ----------
+section "Stopping BACKEND (ports 5050 / 5000)"
+kill_port 5050
 kill_port 5000
 
 # ---------- Optional: stop PostGIS container ----------

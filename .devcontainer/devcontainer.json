@@ -1,16 +1,43 @@
 {
   "name": "School Buddy Dev",
-  "forwardPorts": [3000, 5000],
-  "postStartCommand": "if [ -n \"$CODESPACE_NAME\" ] && [ -x /workspaces/school-buddy/scripts/codespace-stop-hourly.sh ]; then (sleep 10; /workspaces/school-buddy/scripts/codespace-stop-hourly.sh &); fi",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20-bookworm",
+  "forwardPorts": [3000, 5050, 5432],
   "portsAttributes": {
     "3000": {
       "label": "React Frontend",
       "onAutoForward": "notify"
     },
-    "5000": {
+    "5050": {
       "label": "Node Backend",
       "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.autoForwardPorts": true,
+        "remote.autoForwardPortsSource": "output",
+        "remote.portsAttributes": {
+          "3000": {
+            "label": "React Frontend",
+            "onAutoForward": "notify"
+          },
+          "5050": {
+            "label": "Node Backend",
+            "onAutoForward": "notify"
+          },
+          "5432": {
+            "label": "PostgreSQL",
+            "onAutoForward": "silent"
+          }
+        }
+      }
     }
   },
   "postCreateCommand": "npm install",
+  "postStartCommand": "if [ -n \"$CODESPACE_NAME\" ] && [ -x scripts/old/codespace-stop-hourly.sh ]; then (sleep 10; ./scripts/old/codespace-stop-hourly.sh &); fi"
 }

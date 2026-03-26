@@ -11,8 +11,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./db/restore.sh:/docker-entrypoint-initdb.d/01-restore.sh
-      - ./backups/db_backup_snapshot/db_full_schoolmap_05-Mar_12_53.backup:/docker-backup/restore.backup
+      # Restore: uncomment when backup exists at backups/db_backup_snapshot/db_full_schoolmap_05-Mar_12_53.backup
+      # - ./db/restore.sh:/docker-entrypoint-initdb.d/01-restore.sh
+      # - ./backups/db_backup_snapshot/db_full_schoolmap_05-Mar_12_53.backup:/docker-backup/restore.backup
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/migrations/000_create_v2_schema.sql:/docker-entrypoint-initdb.d/02-v2-schema.sql
+      - ./db/migrations/001_add_schools_fees.sql:/docker-entrypoint-initdb.d/03-fees.sql
+      - ./db/migrations/006_catchment_definitions_year_unique.sql:/docker-entrypoint-initdb.d/04-catchment-year-unique.sql
     command: >
       postgres
       -c listen_addresses='*'

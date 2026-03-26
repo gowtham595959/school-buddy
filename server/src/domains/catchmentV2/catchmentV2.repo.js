@@ -89,10 +89,10 @@ async function getGeometriesByHash(schoolId, catchmentKey, builtHash) {
 async function getAdmissionsPolicies(schoolId) {
   const { rows } = await db.query(
     `
-    SELECT entry_year, year_group, total_intake, policy_url
+    SELECT *
     FROM admissions_policies
     WHERE school_id = $1
-    ORDER BY entry_year DESC
+    ORDER BY entry_year DESC NULLS LAST
     `,
     [schoolId]
   );
