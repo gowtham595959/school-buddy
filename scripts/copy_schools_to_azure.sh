@@ -30,9 +30,9 @@ echo "=============================================="
 echo ""
 echo "Step 1: Applying migrations and school updates to local DB..."
 docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < db/migrations/001_add_schools_fees.sql 2>/dev/null || true
-docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < scripts/update_schools_data.sql 2>/dev/null || true
-docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < scripts/update_schools_fees.sql 2>/dev/null || true
-docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < scripts/update_schools_flags.sql 2>/dev/null || true
+docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < server/scripts/update_schools_data.sql 2>/dev/null || true
+docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < server/scripts/update_schools_fees.sql 2>/dev/null || true
+docker exec -i schoolbuddy-postgis psql -U postgres -d schoolmap < server/scripts/update_schools_flags.sql 2>/dev/null || true
 echo "✅ Local DB updated."
 
 # 2. Create backup

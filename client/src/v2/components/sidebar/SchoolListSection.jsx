@@ -55,6 +55,9 @@ export default function SchoolListSection({
   onOpenDetails,
   onRowClick,
   drawerSchoolId,
+
+  /** Left panel: visual group — green | amber | yellow */
+  sectionAccent,
 }) {
   const safeItems = Array.isArray(items) ? items : [];
   const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
@@ -82,8 +85,15 @@ export default function SchoolListSection({
   const canLoadMore =
     !!showLoadMore && visibleCount < safeItems.length && safeItems.length > 0;
 
+  const sectionClass = [
+    "v2-section",
+    sectionAccent ? `v2-section--accent-${sectionAccent}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="v2-section">
+    <div className={sectionClass}>
       <div className="v2-section-header">
         <div className="v2-section-title">{title}</div>
         <button className="v2-link-btn">View all</button>

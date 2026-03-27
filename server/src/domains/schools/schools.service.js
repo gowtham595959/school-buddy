@@ -39,7 +39,9 @@ async function fetchAllSchools() {
       school_code,
       top_school,
       fees,
-      fees_notes
+      fees_notes,
+      has_results_gcse,
+      has_results_alevel
     FROM schools
     ORDER BY name
   `);

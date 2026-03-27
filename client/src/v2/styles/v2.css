@@ -228,6 +228,33 @@ html, body, #root {
   margin-bottom: 12px;
 }
 
+/* Left panel school groups: very light fill, left accent bar */
+.v2-section--accent-green {
+  border-radius: 12px;
+  background: #f4fdfa;
+  border: 1px solid #d1f5e8;
+  border-left: 4px solid #10b981;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.06);
+}
+
+/* Open catchment — butter / manilla (swapped from former “other” palette) */
+.v2-section--accent-amber {
+  border-radius: 12px;
+  background: #fdfdf8;
+  border: 1px solid #ebe8a8;
+  border-left: 4px solid #a16207;
+  box-shadow: 0 1px 2px rgba(161, 98, 7, 0.06);
+}
+
+/* Other schools — peach / orange (swapped from former open-catchment palette) */
+.v2-section--accent-yellow {
+  border-radius: 12px;
+  background: #fff9f5;
+  border: 1px solid #ffd9c2;
+  border-left: 4px solid #ea580c;
+  box-shadow: 0 1px 2px rgba(234, 88, 12, 0.06);
+}
+
 .v2-section-header {
   display: flex;
   justify-content: space-between;
@@ -576,6 +603,27 @@ html, body, #root {
   color: #b91c1c;
 }
 
+/* GCSE / A level results header chips — green when at/above tier, yellow below */
+.v2-drawer-chip--results-header-high {
+  background: #ecfdf5;
+  border-color: #34d399;
+  color: #047857;
+}
+
+.v2-drawer-chip--results-header-low {
+  background: #fefce8;
+  border-color: #facc15;
+  color: #713f12;
+}
+
+/* GCSE / A level results header chips — suffix ★ for top-tier % bands */
+.v2-drawer-chip__results-outstanding-star {
+  margin-left: 3px;
+  font-size: 0.95em;
+  line-height: 1;
+  vertical-align: 0.05em;
+}
+
 .v2-drawer-section-chevron-icon {
   color: #999;
   font-size: 12px;
@@ -833,6 +881,208 @@ html, body, #root {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* GCSE results (DfE KS4 headlines) */
+.v2-gcse-panel {
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.v2-gcse-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.v2-gcse-tab {
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #334155;
+}
+
+.v2-gcse-tab--active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.v2-gcse-tab--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.v2-gcse-footnote {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.v2-gcse-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.v2-gcse-table th,
+.v2-gcse-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.v2-gcse-table th {
+  width: 24%;
+  min-width: 6.5rem;
+  font-weight: 500;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.v2-gcse-table .v2-gcse-explain {
+  width: 52%;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 400;
+  vertical-align: top;
+}
+
+.v2-gcse-table .v2-gcse-explain__clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.4;
+  word-break: break-word;
+  cursor: help;
+}
+
+.v2-gcse-table .v2-gcse-value {
+  width: 24%;
+  font-variant-numeric: tabular-nums;
+  vertical-align: top;
+}
+
+.v2-gcse-ci {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.v2-gcse-more-dfe {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.v2-gcse-more-dfe__title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Hover / focus shows rich popover (native title cannot do bold + gaps). */
+.v2-gcse-more-dfe__hover {
+  position: relative;
+  outline: none;
+  cursor: help;
+}
+
+.v2-gcse-more-dfe__hover:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+
+.v2-gcse-more-dfe__teaser {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.v2-gcse-more-dfe__popover {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 60;
+  width: 100%;
+  max-width: min(100%, 26rem);
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px -1px rgb(15 23 42 / 8%),
+    0 10px 20px -4px rgb(15 23 42 / 12%);
+  font-size: 11px;
+  line-height: 1.45;
+  color: #475569;
+  text-align: left;
+  cursor: default;
+}
+
+/* Bridge gap so hover is not lost moving from teaser to popover */
+.v2-gcse-more-dfe__popover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 8px;
+}
+
+.v2-gcse-more-dfe__hover:hover .v2-gcse-more-dfe__popover,
+.v2-gcse-more-dfe__hover:focus-within .v2-gcse-more-dfe__popover {
+  display: block;
+}
+
+.v2-gcse-more-dfe__popover-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  list-style-type: disc;
+}
+
+.v2-gcse-more-dfe__popover-item {
+  margin: 0 0 10px;
+}
+
+.v2-gcse-more-dfe__popover-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.v2-gcse-more-dfe__popover-item strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.v2-gcse-more-dfe__popover-la {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 11px;
+  color: #475569;
+}
+
+.v2-gcse-more-dfe__popover-la strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.v2-code {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
 }
 
 /* School row highlight when its drawer is open */

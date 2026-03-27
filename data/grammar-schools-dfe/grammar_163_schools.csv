@@ -1,0 +1,164 @@
+school_urn,school_name,la_name,establishment_type_group,school_laestab
+101361,St Michael's Catholic Grammar School,Barnet,Voluntary aided school,3025404
+101676,St Olave's and St Saviour's Grammar School,Bromley,Voluntary aided school,3055410
+102055,The Latymer School,Enfield,Voluntary aided school,3085400
+102850,Ilford County High School,Redbridge,Community school,3174007
+102852,Woodford County High School,Redbridge,Community school,3174025
+106368,Stretford Grammar School,Trafford,Foundation school,3584025
+110084,St Bernard's Catholic Grammar School,Slough,Voluntary aided school,8714700
+118789,Tunbridge Wells Girls' Grammar School,Kent,Foundation school,8864043
+118790,Tunbridge Wells Grammar School for Boys,Kent,Community school,8864045
+118806,Dover Grammar School for Girls,Kent,Community school,8864109
+118835,Maidstone Grammar School,Kent,Foundation school,8864522
+118836,Maidstone Grammar School for Girls,Kent,Foundation school,8864523
+118840,Simon Langton Girls' Grammar School,Kent,Voluntary controlled school,8864534
+118843,The Judd School,Kent,Voluntary aided school,8864622
+118884,Simon Langton Grammar School for Boys,Kent,Foundation school,8865412
+118931,Dover Grammar School for Boys,Kent,Foundation school,8865459
+120642,Spalding High School,Lincolnshire,Community school,9254027
+120655,"The Queen Elizabeth's High School, Gainsborough",Lincolnshire,Community school,9254065
+121694,Ripon Grammar School,North Yorkshire,Community school,8154215
+121716,Ermysted's Grammar School,North Yorkshire,Voluntary aided school,8154608
+136272,Westcliff High School for Boys Academy,Southend-on-Sea,Converter academies,8825401
+136283,Heckmondwike Grammar School,Kirklees,Converter academies,3825401
+136290,"Queen Elizabeth's School, Barnet",Barnet,Converter academies,3025401
+136297,Urmston Grammar Academy,Trafford,Converter academies,3585405
+136305,Highsted Grammar School,Kent,Converter academies,8864080
+136306,Sir Thomas Rich's School,Gloucestershire,Converter academies,9164001
+136313,The Rochester Grammar School,Medway,Converter academies,8875445
+136315,Queen Elizabeth's Grammar Alford - A Selective Academy,Lincolnshire,Converter academies,9255401
+136321,Torquay Boys' Grammar School,Torbay,Converter academies,8805401
+136334,Beths Grammar School,Bexley,Converter academies,3035403
+136337,Fort Pitt Grammar School,Medway,Converter academies,8874069
+136350,Caistor Grammar School,Lincolnshire,Converter academies,9255406
+136353,Pate's Grammar School,Gloucestershire,Converter academies,9165403
+136359,Dartford Grammar School,Kent,Converter academies,8865406
+136366,Colyton Grammar School,Devon,Converter academies,8785400
+136368,Parkstone Grammar School,"Bournemouth, Christchurch and Poole",Converter academies,8395403
+136369,Bexley Grammar School,Bexley,Converter academies,3034000
+136379,Highworth Grammar School,Kent,Converter academies,8864092
+136381,Lancaster Girls' Grammar School,Lancashire,Converter academies,8885402
+136382,Chatham & Clarendon Grammar School,Kent,Converter academies,8865462
+136388,Churston Ferrers Grammar School Academy,Torbay,Converter academies,8804116
+136390,Clitheroe Royal Grammar School,Lancashire,Converter academies,8885403
+136391,South Wilts Grammar School,Wiltshire,Converter academies,8655412
+136412,Chelmsford County High School for Girls,Essex,Converter academies,8815410
+136417,Tonbridge Grammar School,Kent,Converter academies,8865443
+136419,Dr Challoner's Grammar School,Buckinghamshire,Converter academies,8254504
+136420,Upton Court Grammar School,Slough,Converter academies,8715408
+136443,Southend High School for Boys,Southend-on-Sea,Converter academies,8825446
+136444,Southend High School for Girls,Southend-on-Sea,Converter academies,8825428
+136448,Kendrick School,Reading,Converter academies,8705413
+136449,Reading School,Reading,Converter academies,8705401
+136455,Weald of Kent Grammar School,Kent,Converter academies,8864046
+136458,Altrincham Grammar School for Boys,Trafford,Converter academies,3585404
+136460,St Joseph's College,Stoke-on-Trent,Converter academies,8615901
+136484,"The Royal Grammar School, High Wycombe",Buckinghamshire,Converter academies,8255404
+136490,Westcliff High School for Girls,Southend-on-Sea,Converter academies,8825423
+136496,Devonport High School for Boys,Plymouth,Converter academies,8795406
+136498,Sale Grammar School,Trafford,Converter academies,3584029
+136500,Bishop Wordsworth's Church of England Grammar School,Wiltshire,Converter academies,8655413
+136501,Sir Roger Manwood's School,Kent,Converter academies,8865428
+136506,Torquay Girls' Grammar School,Torbay,Converter academies,8804114
+136516,Newport Girls' High School Academy,Telford and Wrekin,Converter academies,8944364
+136521,Langley Grammar School,Slough,Converter academies,8715405
+136551,Newstead Wood School,Bromley,Converter academies,3055405
+136570,Queen Elizabeth's Grammar School,Kent,Converter academies,8865449
+136578,The Crypt School,Gloucestershire,Converter academies,9165404
+136582,Invicta Grammar School,Kent,Converter academies,8864058
+136585,Dane Court Grammar School,Kent,Converter academies,8865460
+136588,Devonport High School for Girls,Plymouth,Converter academies,8794152
+136594,Holcombe Grammar School,Medway,Converter academies,8874068
+136595,Rugby High School,Warwickshire,Converter academies,9375406
+136615,The Tiffin Girls' School,Kingston upon Thames,Converter academies,3144010
+136621,Wilson's School,Sutton,Converter academies,3195400
+136622,Alcester Grammar School,Warwickshire,Converter academies,9375407
+136642,"King Edward VI Grammar School, Chelmsford",Essex,Converter academies,8815411
+136662,Sir Joseph Williamson's Mathematical School,Medway,Converter academies,8874530
+136664,Skipton Girls' High School,North Yorkshire,Converter academies,8154518
+136666,Denmark Road High School,Gloucestershire,Converter academies,9164002
+136723,Wycombe High School,Buckinghamshire,Converter academies,8254503
+136727,Oakwood Park Grammar School,Kent,Converter academies,8865422
+136732,Queen Elizabeth Grammar School Penrith,Westmorland and Furness,Converter academies,9435401
+136742,Lancaster Royal Grammar School,Lancashire,Converter academies,8885401
+136767,Ribston Hall High School,Gloucestershire,Converter academies,9165400
+136771,John Hampden Grammar School,Buckinghamshire,Converter academies,8254009
+136773,Queen Mary's Grammar School,Walsall,Converter academies,3355404
+136777,Queen Mary's High School,Walsall,Converter academies,3355403
+136778,Sutton Coldfield Grammar School for Girls,Birmingham,Converter academies,3304300
+136780,St Anselm's College,Wirral,Converter academies,3445900
+136781,Sir William Borlase's Grammar School,Buckinghamshire,Converter academies,8254505
+136787,Sutton Grammar School,Sutton,Converter academies,3195404
+136788,The North Halifax Grammar School,Calderdale,Converter academies,3815400
+136789,Wallington High School for Girls,Sutton,Converter academies,3195405
+136795,Nonsuch High School for Girls,Sutton,Converter academies,3195401
+136798,Wallington County Grammar School,Sutton,Converter academies,3195407
+136845,Sir Henry Floyd Grammar School,Buckinghamshire,Converter academies,8254065
+136846,Aylesbury High School,Buckinghamshire,Converter academies,8254058
+136850,Poole Grammar School,"Bournemouth, Christchurch and Poole",Converter academies,8395409
+136864,Rainham Mark Grammar School,Medway,Converter academies,8875420
+136874,Stroud High School,Gloucestershire,Converter academies,9165402
+136884,Aylesbury Grammar School,Buckinghamshire,Converter academies,8254500
+136910,Tiffin School,Kingston upon Thames,Converter academies,3145400
+136996,Bournemouth School for Girls,"Bournemouth, Christchurch and Poole",Converter academies,8395405
+137043,King Edward VI Aston School,Birmingham,Converter academies,3305408
+137044,King Edward VI Camp Hill School for Girls,Birmingham,Converter academies,3305406
+137045,King Edward VI Camp Hill School for Boys,Birmingham,Converter academies,3305407
+137046,King Edward VI Five Ways School,Birmingham,Converter academies,3305405
+137047,King Edward VI Handsworth School,Birmingham,Converter academies,3305404
+137091,Chesham Grammar School,Buckinghamshire,Converter academies,8254079
+137099,Gravesend Grammar School,Kent,Converter academies,8865465
+137123,Marling School,Gloucestershire,Converter academies,9165401
+137166,"The King's School, Grantham",Lincolnshire,Converter academies,9255402
+137171,Wirral Grammar School for Girls,Wirral,Converter academies,3444052
+137213,Carre's Grammar School,Lincolnshire,Converter academies,9255403
+137219,Dr Challoner's High School,Buckinghamshire,Converter academies,8254061
+137227,Wilmington Grammar School for Boys,Kent,Converter academies,8865403
+137235,Stratford Girls' Grammar School,Warwickshire,Converter academies,9374002
+137243,West Kirby Grammar School,Wirral,Converter academies,3444056
+137250,Wilmington Grammar School for Girls,Kent,Converter academies,8865400
+137289,Altrincham Grammar School for Girls,Trafford,Converter academies,3585407
+137302,King Edward VI School,Warwickshire,Converter academies,9374601
+137344,Royal Latin School,Buckinghamshire,Converter academies,8254501
+137389,Chatham Grammar,Medway,Converter academies,8875429
+137423,Chislehurst and Sidcup Grammar School,Bexley,Converter academies,3034009
+137446,Haberdashers' Adams,Telford and Wrekin,Converter academies,8945400
+137452,Bournemouth School,"Bournemouth, Christchurch and Poole",Converter academies,8395400
+137474,Barton Court Grammar School,Kent,Converter academies,8865444
+137476,Wirral Grammar School for Boys,Wirral,Converter academies,3445401
+137515,Colchester County High School for Girls,Essex,Converter academies,8815454
+137564,Burnham Grammar School,Buckinghamshire,Converter academies,8254051
+137667,Kesteven and Sleaford High School Selective Academy,Lincolnshire,Converter academies,9254005
+137726,Herschel Grammar School,Slough,Converter academies,8715407
+137739,Cranbrook School,Kent,Converter academies,8865416
+137769,Townley Grammar School,Bexley,Converter academies,3034001
+137793,Bourne Grammar School,Lincolnshire,Converter academies,9254501
+137800,Borden Grammar School,Kent,Converter academies,8864527
+137834,"Mayfield Grammar School, Gravesend",Kent,Converter academies,8865467
+137837,The Folkestone School for Girls,Kent,Converter academies,8865437
+137916,The Blue Coat School,Liverpool,Converter academies,3415404
+137929,Upton Hall School FCJ,Wirral,Converter academies,3445901
+137988,Bishop Vesey's Grammar School,Birmingham,Converter academies,3304660
+138019,The Norton Knatchbull School,Kent,Converter academies,8864528
+138051,The Henrietta Barnett School,Barnet,Converter academies,3024752
+138134,Saint Ambrose College,Trafford,Converter academies,3585900
+138464,Loreto Grammar School,Trafford,Converter academies,3585901
+138480,The Harvey Grammar School,Kent,Converter academies,8864101
+138638,Kesteven and Grantham Girls' School,Lincolnshire,Converter academies,9254004
+138665,"Queen Elizabeth's Grammar School, Horncastle",Lincolnshire,Converter academies,9255411
+138757,Skegness Grammar School,Lincolnshire,Converter academies,9255400
+139140,Boston High School,Lincolnshire,Converter academies,9254022
+139144,Calday Grange Grammar School,Wirral,Converter academies,3445400
+139180,The Boston Grammar School,Lincolnshire,Converter academies,9255424
+139182,The Crossley Heath School,Calderdale,Converter academies,3815401
+139304,Spalding Grammar School,Lincolnshire,Converter academies,9254603
+140595,The Skinners' School,Kent,Converter academies,8865418
+140798,Wolverhampton Girls' High School,Wolverhampton,Converter academies,3365400
+140893,Beaconsfield High School,Buckinghamshire,Converter academies,8255402
+141277,Lawrence Sheriff School,Warwickshire,Converter academies,9374620
+142262,King Edward VI Grammar School,Lincolnshire,Converter academies,9255405
+143562,King Edward VI Handsworth Grammar School for Boys,Birmingham,Converter academies,3305402
+144100,Dartford Grammar School for Girls,Kent,Converter academies,8865411
+148369,Plymouth High School for Girls,Plymouth,Converter academies,8794155
+149899,Colchester Royal Grammar School,Essex,Converter academies,8814036
+150261,Bacup and Rawtenstall Grammar School,Lancashire,Converter academies,8884032

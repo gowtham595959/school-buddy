@@ -11,6 +11,46 @@ import {
 import CatchmentPanel from "./CatchmentPanel";
 import ExamDetailsPanel from "./ExamDetailsPanel";
 import AllocationPanel from "./AllocationPanel";
+import GcseResultsPanel from "./GcseResultsPanel";
+import AlevelResultsPanel from "./AlevelResultsPanel";
+import { useGcseResults } from "../../domains/gcse/useGcseResults";
+import { useKs5Results } from "../../domains/ks5/useKs5Results";
+
+const RESULTS_YEAR_TAB_ORDER = [2025, 2024, 2023];
+
+function pickRowByYearTab(rows, order) {
+  const byYear = new Map();
+  for (const r of rows) {
+    if (r.year_tab != null) byYear.set(Number(r.year_tab), r);
+  }
+  for (const y of order) {
+    if (byYear.has(y)) return byYear.get(y);
+  }
+  return null;
+}
+
+/** GCSE grades 8–9 % chip: green from this %, yellow below. */
+const GCSE_CHIP_GRADES_89_HIGH_PCT = 60;
+/** GCSE grades 8–9 % chip: show ★ when strictly above this % (still green/yellow from high threshold above). */
+const GCSE_CHIP_GRADES_89_STAR_PCT = 80;
+/** A level % A* or A chip: green from this %, yellow below. */
+const ALEVEL_CHIP_ASTAR_A_HIGH_PCT = 50;
+/** A level % A* or A: show ★ outside the chip when strictly above this %. */
+const ALEVEL_CHIP_ASTAR_A_STAR_PCT = 70;
+
+function fmtResultsPctChip(v) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return `${n.toFixed(1)}%`;
+}
+
+function resultsHeaderChipTier(rawPct, thresholdPct) {
+  if (rawPct == null || rawPct === "") return null;
+  const n = Number(rawPct);
+  if (!Number.isFinite(n)) return null;
+  return n >= thresholdPct ? "high" : "low";
+}
 
 function isEnabledFlag(school, flag) {
   // Core principle: if a flag is missing, behave as "enabled" (non-breaking).
@@ -234,6 +274,88 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
     return <ExamSubjectsHeaderChip label={subjectsLabel} />;
   }, [enabled.exams, admissionsLoading, admissionsError, admissionsPolicies]);
 
+  const { rows: gcseRows, loading: gcseLoading, error: gcseError } = useGcseResults(
+    school?.id,
+    enabled.gcse && Boolean(school?.id)
+  );
+
+  const gcseHeaderPreview = useMemo(() => {
+    if (!enabled.gcse || gcseLoading || gcseError || gcseRows.length === 0) return null;
+    const row = pickRowByYearTab(gcseRows, RESULTS_YEAR_TAB_ORDER);
+    if (!row) return null;
+    const pct = fmtResultsPctChip(row.gcse_entries_pct_grade_8_9);
+    if (!pct) return null;
+    const tier = resultsHeaderChipTier(row.gcse_entries_pct_grade_8_9, GCSE_CHIP_GRADES_89_HIGH_PCT);
+    const tierClass =
+      tier === "high"
+        ? "v2-drawer-chip--results-header-high"
+        : tier === "low"
+          ? "v2-drawer-chip--results-header-low"
+          : "";
+    const gcse89n = Number(row.gcse_entries_pct_grade_8_9);
+    const showGcseOutstandingStar =
+      Number.isFinite(gcse89n) && gcse89n > GCSE_CHIP_GRADES_89_STAR_PCT;
+    const gcseChipTitle = `Latest loaded year — grades 8–9 share of counted GCSE entries (DfE). Chip is green at ≥${GCSE_CHIP_GRADES_89_HIGH_PCT}%, yellow below.${
+      showGcseOutstandingStar
+        ? ` ★ Shown when grades 8–9 are above ${GCSE_CHIP_GRADES_89_STAR_PCT}%.`
+        : ""
+    }`;
+    return (
+      <span
+        className={["v2-drawer-chip", tierClass].filter(Boolean).join(" ")}
+        title={gcseChipTitle}
+      >
+        Grades 8–9: {pct}
+        {showGcseOutstandingStar ? (
+          <span className="v2-drawer-chip__results-outstanding-star" aria-hidden>
+            ★
+          </span>
+        ) : null}
+      </span>
+    );
+  }, [enabled.gcse, gcseLoading, gcseError, gcseRows]);
+
+  const { rows: ks5Rows, loading: ks5Loading, error: ks5Error } = useKs5Results(
+    school?.id,
+    enabled.alevel && Boolean(school?.id)
+  );
+
+  const alevelHeaderPreview = useMemo(() => {
+    if (!enabled.alevel || ks5Loading || ks5Error || ks5Rows.length === 0) return null;
+    const row = pickRowByYearTab(ks5Rows, RESULTS_YEAR_TAB_ORDER);
+    if (!row) return null;
+    const pct = fmtResultsPctChip(row.alevel_entries_pct_grade_astar_a);
+    if (!pct) return null;
+    const tier = resultsHeaderChipTier(row.alevel_entries_pct_grade_astar_a, ALEVEL_CHIP_ASTAR_A_HIGH_PCT);
+    const tierClass =
+      tier === "high"
+        ? "v2-drawer-chip--results-header-high"
+        : tier === "low"
+          ? "v2-drawer-chip--results-header-low"
+          : "";
+    const astarAn = Number(row.alevel_entries_pct_grade_astar_a);
+    const showAlevelOutstandingStar =
+      Number.isFinite(astarAn) && astarAn > ALEVEL_CHIP_ASTAR_A_STAR_PCT;
+    const alevelChipTitle = `Latest loaded year — % of GCE A level exam entries at A* or A (DfE). Chip is green at ≥${ALEVEL_CHIP_ASTAR_A_HIGH_PCT}%, yellow below.${
+      showAlevelOutstandingStar
+        ? ` ★ Shown when A* or A share is above ${ALEVEL_CHIP_ASTAR_A_STAR_PCT}%.`
+        : ""
+    }`;
+    return (
+      <span
+        className={["v2-drawer-chip", tierClass].filter(Boolean).join(" ")}
+        title={alevelChipTitle}
+      >
+        % A* or A: {pct}
+        {showAlevelOutstandingStar ? (
+          <span className="v2-drawer-chip__results-outstanding-star" aria-hidden>
+            ★
+          </span>
+        ) : null}
+      </span>
+    );
+  }, [enabled.alevel, ks5Loading, ks5Error, ks5Rows]);
+
   return (
     <aside className="v2-right-drawer" aria-label="School details drawer">
       <div className="v2-drawer-header">
@@ -424,21 +546,15 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
 
         {/* 6) GCSE results */}
         {enabled.gcse ? (
-          <Section title="GCSE results" icon={DRAWER_ICONS.results}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: show Progress 8 / Attainment 8 /
-              Eng+Math metrics.)
-            </div>
+          <Section title="GCSE results" icon={DRAWER_ICONS.results} preview={gcseHeaderPreview}>
+            <GcseResultsPanel schoolId={school?.id} />
           </Section>
         ) : null}
 
         {/* 7) A level results */}
         {enabled.alevel ? (
-          <Section title="A level results" icon={DRAWER_ICONS.results}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: show avg grade/points + subject
-              breakdowns.)
-            </div>
+          <Section title="A level results" icon={DRAWER_ICONS.results} preview={alevelHeaderPreview}>
+            <AlevelResultsPanel schoolId={school?.id} />
           </Section>
         ) : null}
 
