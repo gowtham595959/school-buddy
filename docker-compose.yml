@@ -18,6 +18,19 @@ services:
       - ./db/migrations/000_create_v2_schema.sql:/docker-entrypoint-initdb.d/02-v2-schema.sql
       - ./db/migrations/001_add_schools_fees.sql:/docker-entrypoint-initdb.d/03-fees.sql
       - ./db/migrations/006_catchment_definitions_year_unique.sql:/docker-entrypoint-initdb.d/04-catchment-year-unique.sql
+      - ./db/migrations/030_school_gcse_results.sql:/docker-entrypoint-initdb.d/05-gcse-results.sql
+      - ./db/migrations/031_schools_gcse_drawer_flags.sql:/docker-entrypoint-initdb.d/06-gcse-drawer-flags.sql
+      - ./db/migrations/032_school_gcse_results_school_id.sql:/docker-entrypoint-initdb.d/07-gcse-school-id.sql
+      - ./db/migrations/033_school_gcse_entry_grade_bands.sql:/docker-entrypoint-initdb.d/08-gcse-entry-grade-bands.sql
+      - ./db/migrations/034_school_gcse_results_data_source_url.sql:/docker-entrypoint-initdb.d/09-gcse-data-source-url.sql
+      - ./db/migrations/035_school_gcse_engmath_7_plus.sql:/docker-entrypoint-initdb.d/10-gcse-engmath-7-plus.sql
+      - ./db/migrations/036_data_source_refresh_log.sql:/docker-entrypoint-initdb.d/11-data-source-refresh-log.sql
+      - ./db/migrations/037_school_ks5_results.sql:/docker-entrypoint-initdb.d/12-school-ks5-results.sql
+      - ./db/migrations/038_enable_schools_alevel_drawer.sql:/docker-entrypoint-initdb.d/13-enable-alevel-drawer.sql
+      - ./db/migrations/039_data_source_refresh_log_ks5.sql:/docker-entrypoint-initdb.d/14-data-source-refresh-log-ks5.sql
+      - ./db/migrations/040_school_ks5_alevel_grade_bands.sql:/docker-entrypoint-initdb.d/15-school-ks5-alevel-grade-bands.sql
+      - ./db/migrations/041_data_source_refresh_log_align_loaders.sql:/docker-entrypoint-initdb.d/16-data-source-refresh-log-align.sql
+      - ./db/migrations/042_schools_results_drawer_flags_from_tables.sql:/docker-entrypoint-initdb.d/17-schools-results-drawer-flags.sql
     command: >
       postgres
       -c listen_addresses='*'

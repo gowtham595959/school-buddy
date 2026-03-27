@@ -113,6 +113,7 @@ export default function LeftPanel({
 
       <SchoolListSection
         title="Schools in Catchment"
+        sectionAccent="green"
         items={topItems}
         selectedIds={selectedIds}
         onToggle={onToggleSchool}
@@ -136,6 +137,7 @@ export default function LeftPanel({
 
       <SchoolListSection
         title="Schools with Open Catchment"
+        sectionAccent="amber"
         items={middleItems}
         selectedIds={selectedIds}
         onToggle={onToggleSchool}
@@ -160,6 +162,7 @@ export default function LeftPanel({
 
       <SchoolListSection
         title="All Other Schools"
+        sectionAccent="yellow"
         items={bottomItems}
         selectedIds={selectedIds}
         onToggle={onToggleSchool}

@@ -4,6 +4,37 @@ const express = require("express");
 const router = express.Router();
 
 const { fetchAllSchools } = require("../domains/schools/schools.service");
+const { fetchGcseResultsForSchoolId } = require("../domains/gcse/gcse.service");
+const { fetchKs5ResultsForSchoolId } = require("../domains/ks5/ks5.service");
+
+/**
+ * GET /api/schools/:schoolId/gcse-results
+ */
+router.get("/:schoolId/gcse-results", async (req, res) => {
+  try {
+    const rows = await fetchGcseResultsForSchoolId(req.params.schoolId);
+    res.json(rows);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("❌ GCSE results:", err.message);
+    res.status(status).json({ error: err.message || "Failed to fetch GCSE results" });
+  }
+});
+
+/**
+ * GET /api/schools/:schoolId/ks5-results
+ * DfE 16–18 performance — A level exam cohort row.
+ */
+router.get("/:schoolId/ks5-results", async (req, res) => {
+  try {
+    const rows = await fetchKs5ResultsForSchoolId(req.params.schoolId);
+    res.json(rows);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("❌ KS5 results:", err.message);
+    res.status(status).json({ error: err.message || "Failed to fetch KS5 results" });
+  }
+});
 
 /**
  * GET /api/schools

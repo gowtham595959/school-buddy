@@ -150,3 +150,6 @@ scripts/old/codespace-stop-*.log
 scripts/old/codespace-stop-skip.flag
 scripts/codespace-stop-*.log
 scripts/codespace-stop-skip.flag
+
+# DfE “download all data” ZIPs from Explore Education Statistics (~1GB+ total; see server/scripts/download_dfe_performance.sh)
+data/dfe-performance/
