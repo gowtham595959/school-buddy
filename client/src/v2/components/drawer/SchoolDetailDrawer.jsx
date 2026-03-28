@@ -13,6 +13,7 @@ import ExamDetailsPanel from "./ExamDetailsPanel";
 import AllocationPanel from "./AllocationPanel";
 import GcseResultsPanel from "./GcseResultsPanel";
 import AlevelResultsPanel from "./AlevelResultsPanel";
+import Destinations1618Panel from "./Destinations1618Panel";
 import { useGcseResults } from "../../domains/gcse/useGcseResults";
 import { useKs5Results } from "../../domains/ks5/useKs5Results";
 
@@ -243,7 +244,10 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
       allocations: admissionsOk && isEnabledFlag(school, "has_allocations"),
       gcse: isEnabledFlag(school, "has_results_gcse"),
       alevel: isEnabledFlag(school, "has_results_alevel"),
-      oxbridge: isEnabledFlag(school, "has_oxbridge"),
+      destinations:
+        Boolean(school?.has_results_destinations) ||
+        school?.oxbridge_offers != null ||
+        Boolean(school?.source_url_oxbridge_offers),
       inspection: isEnabledFlag(school, "has_inspection"),
       subjects: isEnabledFlag(school, "has_subjects"),
     };
@@ -355,6 +359,27 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
       </span>
     );
   }, [enabled.alevel, ks5Loading, ks5Error, ks5Rows]);
+
+  const destinationsHeaderPreview = useMemo(() => {
+    if (!enabled.destinations || !school) return null;
+    const hasSchoolOx =
+      school.oxbridge_offers != null ||
+      (school.source_url_oxbridge_offers != null &&
+        String(school.source_url_oxbridge_offers).trim() !== "");
+    if (!hasSchoolOx) return null;
+    const n =
+      school.oxbridge_offers != null && school.oxbridge_offers !== ""
+        ? String(school.oxbridge_offers)
+        : "—";
+    return (
+      <span
+        className="v2-drawer-chip v2-drawer-chip--open-seats-neutral v2-drawer-chip--single-line"
+        title="School-reported Oxbridge offers (see panel for full label, source link, and DfE destinations)."
+      >
+        Oxbridge: {n}
+      </span>
+    );
+  }, [enabled.destinations, school]);
 
   return (
     <aside className="v2-right-drawer" aria-label="School details drawer">
@@ -558,12 +583,15 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
           </Section>
         ) : null}
 
-        {/* 8) Oxbridge offers & Destinations */}
-        {enabled.oxbridge ? (
-          <Section title="Oxbridge offers & Destinations" icon={DRAWER_ICONS.oxbridge}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: yearly oxbridge + RG % + destinations.)
-            </div>
+        {/* 8) Post-18 destinations (DfE) — panel title kept for parents searching “Oxbridge” */}
+        {enabled.destinations ? (
+          <Section
+            title="Oxbridge offers & Destinations"
+            icon={DRAWER_ICONS.oxbridge}
+            preview={destinationsHeaderPreview}
+            previewClassName="v2-drawer-section-preview--nowrap"
+          >
+            <Destinations1618Panel schoolId={school?.id} school={school} />
           </Section>
         ) : null}
 

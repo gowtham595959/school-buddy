@@ -6,6 +6,9 @@ const router = express.Router();
 const { fetchAllSchools } = require("../domains/schools/schools.service");
 const { fetchGcseResultsForSchoolId } = require("../domains/gcse/gcse.service");
 const { fetchKs5ResultsForSchoolId } = require("../domains/ks5/ks5.service");
+const {
+  fetchDestinations1618ForSchoolId,
+} = require("../domains/destinations1618/destinations1618.service");
 
 /**
  * GET /api/schools/:schoolId/gcse-results
@@ -33,6 +36,21 @@ router.get("/:schoolId/ks5-results", async (req, res) => {
     const status = err.status || 500;
     if (status >= 500) console.error("❌ KS5 results:", err.message);
     res.status(status).json({ error: err.message || "Failed to fetch KS5 results" });
+  }
+});
+
+/**
+ * GET /api/schools/:schoolId/destinations-1618
+ * DfE 16–18 sustained destination measures (Level 3 headline where published).
+ */
+router.get("/:schoolId/destinations-1618", async (req, res) => {
+  try {
+    const rows = await fetchDestinations1618ForSchoolId(req.params.schoolId);
+    res.json(rows);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("❌ 16–18 destinations:", err.message);
+    res.status(status).json({ error: err.message || "Failed to fetch destinations" });
   }
 });
 

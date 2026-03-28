@@ -31,6 +31,11 @@ services:
       - ./db/migrations/040_school_ks5_alevel_grade_bands.sql:/docker-entrypoint-initdb.d/15-school-ks5-alevel-grade-bands.sql
       - ./db/migrations/041_data_source_refresh_log_align_loaders.sql:/docker-entrypoint-initdb.d/16-data-source-refresh-log-align.sql
       - ./db/migrations/042_schools_results_drawer_flags_from_tables.sql:/docker-entrypoint-initdb.d/17-schools-results-drawer-flags.sql
+      - ./db/migrations/043_data_source_refresh_log_truth_panels.sql:/docker-entrypoint-initdb.d/18-data-source-refresh-truth-panels.sql
+      - ./db/migrations/044_school_1618_destinations.sql:/docker-entrypoint-initdb.d/19-school-1618-destinations.sql
+      - ./db/migrations/045_schools_has_results_destinations.sql:/docker-entrypoint-initdb.d/20-schools-has-results-destinations.sql
+      - ./db/migrations/046_data_source_refresh_log_1618_destinations.sql:/docker-entrypoint-initdb.d/21-data-source-1618-destinations.sql
+      - ./db/migrations/047_schools_oxbridge_offers.sql:/docker-entrypoint-initdb.d/22-schools-oxbridge-offers.sql
     command: >
       postgres
       -c listen_addresses='*'

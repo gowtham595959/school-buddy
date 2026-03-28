@@ -237,13 +237,13 @@ html, body, #root {
   box-shadow: 0 1px 2px rgba(16, 185, 129, 0.06);
 }
 
-/* Open catchment — butter / manilla (swapped from former “other” palette) */
-.v2-section--accent-amber {
+/* Open catchment — light blue */
+.v2-section--accent-blue {
   border-radius: 12px;
-  background: #fdfdf8;
-  border: 1px solid #ebe8a8;
-  border-left: 4px solid #a16207;
-  box-shadow: 0 1px 2px rgba(161, 98, 7, 0.06);
+  background: #f4f8fd;
+  border: 1px solid #c5daf5;
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.07);
 }
 
 /* Other schools — peach / orange (swapped from former open-catchment palette) */
@@ -526,6 +526,12 @@ html, body, #root {
   min-width: 0;
 }
 
+/* Single header chip (e.g. Oxbridge): keep chip on same row as title, not wrapped below */
+.v2-drawer-section-preview--nowrap {
+  flex-wrap: nowrap;
+  margin-left: 4px; /* tighter than default 16px — sit closer to the title */
+}
+
 /* 11+ exam subjects: consume remaining header width so auto-fit can measure */
 .v2-drawer-chip-exam-wrap {
   flex: 1 1 0;
@@ -583,6 +589,12 @@ html, body, #root {
   background: #f0f9ff;
   border-color: #7dd3fc;
   color: #0369a1;
+}
+
+/* Short header chips (e.g. Oxbridge count): keep label + value on one line */
+.v2-drawer-chip--single-line {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .v2-drawer-chip--open-seats-green {
