@@ -15,7 +15,7 @@ Visibility is controlled by boolean flags on `schools`:
 | 11+ Allocation data      | `has_allocations` AND `has_admissions` |
 | GCSE results             | `has_results_gcse`        |
 | A level results          | `has_results_alevel`      |
-| Oxbridge offers & Destinations | `has_oxbridge`     |
+| Oxbridge offers & Destinations | `has_results_destinations` (DfE 16–18 destinations loaded) |
 | Inspections              | `has_inspection`           |
 | GCSE Subjects            | `has_subjects`             |
 
@@ -101,34 +101,50 @@ Visibility is controlled by boolean flags on `schools`:
 
 ## 7. GCSE results
 
-| UI Data        | Source Table   | Columns                                                          |
-|----------------|----------------|------------------------------------------------------------------|
-| Results by year| gcse_results   | school_id, year, rank, results (jsonb), metric_key, metric_value, source_url, notes |
+**API:** `GET /api/schools/:id/gcse-results` → `server/src/domains/gcse/gcse.service.js` (see `fetchGcseResultsForSchoolId`).  
+**Data path:** `GcseResultsPanel.jsx` and `SchoolDetailDrawer` header chip use `useGcseResults` → that endpoint only. **No DfE calls from the browser.**
 
-**Relationship:** `gcse_results.school_id` → `schools.id`
+| UI Data | Source Table | Columns (API returns; one row per `cohort_end_year`) |
+|--------|---------------|------------------------------------------------------|
+| Year tab, source link, LA (popover) | `school_gcse_results` | `cohort_end_year` (as `year_tab`), `academic_year_label`, `version`, `data_source_url`, `la_name`, `school_name`, … |
+| Headline & grade bands | `school_gcse_results` | `pupil_count`, `attainment8_average`, `progress8_*`, `engmath_*`, `ebacc_*`, `gcse_five_engmath_percent`, `gcse_91_percent`, `gcse_entries_pct_grade_*`, `gcse_exam_entries_denominator` |
 
-Typical metrics: Progress 8, Attainment 8, Eng+Math.
+**Relationship:** `school_gcse_results.school_id` → `schools.id` (or match via `school_urn` ↔ `schools.school_code` if `school_id` unset).  
+**Operational lineage:** `data_source_refresh_log.slug = 'dfe_ks4_gcse_school_ingest'`.  
+**Loader:** `server/scripts/load_school_gcse_dfe.py`.
 
 ---
 
 ## 8. A level results
 
-| UI Data        | Source Table   | Columns                                                          |
-|----------------|----------------|------------------------------------------------------------------|
-| Results by year| alevel_results | school_id, year, rank, results (jsonb), metric_key, metric_value, source_url, notes |
+**API:** `GET /api/schools/:id/ks5-results` → `server/src/domains/ks5/ks5.service.js` (`fetchKs5ResultsForSchoolId`).  
+**Data path:** `AlevelResultsPanel.jsx` and `SchoolDetailDrawer` header chip use `useKs5Results` → that endpoint only. **No DfE calls from the browser.**
 
-**Relationship:** `alevel_results.school_id` → `schools.id`
+| UI Data | Source Table | Columns |
+|--------|--------------|---------|
+| Year tab, source, LA | `school_ks5_results` | `cohort_end_year` (`year_tab`), `academic_year_label`, `version`, `data_source_url`, `la_name`, `school_name`, … |
+| Students included, grade % rows, APS, best 3, AAB, retention, VA | `school_ks5_results` | `aps_per_entry_student_count`, `alevel_entries_pct_*`, `alevel_exam_entries_denominator`, `aps_per_entry`, `aps_per_entry_grade`, `best_three_alevels_*`, `aab_*`, `retained_*`, `value_added*`, `progress_banding` |
+
+**Relationship:** `school_ks5_results.school_id` → `schools.id` (or `school_urn` ↔ `schools.school_code`).  
+**Operational lineage:** `data_source_refresh_log.slug = 'dfe_ks5_16_18_alevel_ingest'`.  
+**Loader:** `server/scripts/load_school_ks5_dfe.py`.
 
 ---
 
-## 9. Oxbridge offers & Destinations
+## 9. Oxbridge offers & Destinations (DfE post-18 destinations)
 
-| UI Data          | Source Table        | Columns                                                                 |
-|------------------|---------------------|-------------------------------------------------------------------------|
-| Offers by year   | oxbridge_destinations | school_id, year, oxford_offers, cambridge_offers, destination_list (jsonb) |
-| Metrics          | oxbridge_destinations | metric_key, metric_value, source_url                                 |
+**API:** `GET /api/schools/:id/destinations-1618` → `server/src/domains/destinations1618/destinations1618.service.js` → **`school_1618_destinations`** only.
 
-**Relationship:** `oxbridge_destinations.school_id` → `schools.id`
+| UI Data | Source Table | Columns |
+|--------|--------------|---------|
+| Year tab, source link | `school_1618_destinations` | `cohort_end_year` (`year_tab`), `academic_year_label`, `data_source_url`, `qualification_breakdown`, … |
+| Sustained destination % rows | `school_1618_destinations` | `leavers_student_count`, `pct_overall`, `pct_education`, `pct_he`, `pct_fe`, `pct_other_education`, `pct_apprenticeship`, `pct_employment`, `pct_not_sustained`, `pct_unknown` |
+
+**Loader:** `server/scripts/load_school_1618_destinations_dfe.py` (DfE *16–18 destination measures* ZIP).  
+**Visibility:** `schools.has_results_destinations` (set by loader / migration 045).  
+**Note:** Official open data does not include per-school Oxbridge offer counts; the panel shows DfE sustained-destination statistics and states that in copy.
+
+**Relationship:** `school_1618_destinations.school_id` → `schools.id`
 
 ---
 
@@ -162,9 +178,9 @@ Typical metrics: Progress 8, Attainment 8, Eng+Math.
 | 11+ Catchment       | catchment_definitions, catchment_geometries | 33, 182        |
 | 11+ Exam Details    | admission_exams, admission_exam_papers      | 0, 0           |
 | 11+ Allocation data | admissions_policies, admissions_allocation_history, admissions_criteria | 0, 0, 0 |
-| GCSE results        | gcse_results                        | 0              |
-| A level results     | alevel_results                      | 0              |
-| Oxbridge            | oxbridge_destinations               | 0              |
+| GCSE results        | school_gcse_results                 | (per ingest)   |
+| A level results     | school_ks5_results                  | (per ingest)   |
+| Oxbridge / destinations | school_1618_destinations         | (per ingest)   |
 | Inspections         | inspections                         | 0              |
 | GCSE Subjects       | school_subjects                     | 0              |
 
@@ -196,7 +212,7 @@ has_catchment, catchment_category, icon_url, marker_style_key
 - phase, age_range, boarding_type, religious_affiliation
 - address, website, phone, email, description
 - has_admissions, has_exams, has_allocations
-- has_results_gcse, has_results_alevel, has_oxbridge
+- has_results_gcse, has_results_alevel, has_results_destinations
 - has_inspection, has_subjects
 
 **Action:** Either extend `fetchAllSchools` or add `fetchSchoolDetail(schoolId)` that returns all columns above plus related data from the other tables.

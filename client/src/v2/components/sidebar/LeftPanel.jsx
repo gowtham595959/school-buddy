@@ -137,7 +137,7 @@ export default function LeftPanel({
 
       <SchoolListSection
         title="Schools with Open Catchment"
-        sectionAccent="amber"
+        sectionAccent="blue"
         items={middleItems}
         selectedIds={selectedIds}
         onToggle={onToggleSchool}

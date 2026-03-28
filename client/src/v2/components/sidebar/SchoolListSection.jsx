@@ -56,7 +56,7 @@ export default function SchoolListSection({
   onRowClick,
   drawerSchoolId,
 
-  /** Left panel: visual group — green | amber | yellow */
+  /** Left panel: visual group — green | blue | yellow */
   sectionAccent,
 }) {
   const safeItems = Array.isArray(items) ? items : [];

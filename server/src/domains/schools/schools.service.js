@@ -41,7 +41,10 @@ async function fetchAllSchools() {
       fees,
       fees_notes,
       has_results_gcse,
-      has_results_alevel
+      has_results_alevel,
+      has_results_destinations,
+      oxbridge_offers,
+      source_url_oxbridge_offers
     FROM schools
     ORDER BY name
   `);
