@@ -1,26 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchAdmissionsPoliciesBySchoolId } from "./admissions.api";
+import { fetchSchoolSubjectsBySchoolId } from "./schoolSubjects.api";
 
-/**
- * Loads admissions_policies for exam and/or allocation drawer sections (independent of catchment).
- */
-export function useAdmissionsPolicies(schoolId, enabled) {
+export function useSchoolSubjects(schoolId, enabled) {
   const cacheRef = useRef({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [, setVersion] = useState(0);
 
   const shouldFetch = schoolId && enabled;
-  const cached = cacheRef.current[schoolId];
-  const policies = cached?.policies ?? null;
-  const allocationHistory = cached?.allocationHistory ?? null;
+  const rows = cacheRef.current[schoolId]?.rows ?? null;
 
   useEffect(() => {
     if (!shouldFetch) {
       setError(null);
       return;
     }
-
     if (cacheRef.current[schoolId]) {
       setError(null);
       return;
@@ -30,24 +24,18 @@ export function useAdmissionsPolicies(schoolId, enabled) {
     setLoading(true);
     setError(null);
 
-    fetchAdmissionsPoliciesBySchoolId(schoolId)
+    fetchSchoolSubjectsBySchoolId(schoolId)
       .then((data) => {
         if (!cancelled) {
           cacheRef.current = {
             ...cacheRef.current,
-            [schoolId]: {
-              policies: data.policies ?? [],
-              allocationHistory: data.allocationHistory ?? [],
-            },
+            [schoolId]: { rows: Array.isArray(data) ? data : [] },
           };
           setVersion((v) => v + 1);
-          setError(null);
         }
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err?.message || "Failed to load admissions data");
-        }
+        if (!cancelled) setError(err?.message || "Failed to load subjects");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -58,5 +46,5 @@ export function useAdmissionsPolicies(schoolId, enabled) {
     };
   }, [schoolId, enabled, shouldFetch]);
 
-  return { policies, allocationHistory, loading, error };
+  return { rows, loading, error };
 }

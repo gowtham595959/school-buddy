@@ -14,8 +14,11 @@ router.get("/school/:schoolId", async (req, res) => {
       return res.status(400).json({ error: "Invalid schoolId" });
     }
 
-    const policies = await admissionsRepo.listPoliciesBySchoolId(schoolId);
-    return res.json({ ok: true, policies });
+    const [policies, allocationHistory] = await Promise.all([
+      admissionsRepo.listPoliciesBySchoolId(schoolId),
+      admissionsRepo.listAllocationHistoryBySchoolId(schoolId),
+    ]);
+    return res.json({ ok: true, policies, allocationHistory });
   } catch (err) {
     console.error("❌ GET /api/admissions/school/:schoolId error:", err);
     return res.status(500).json({ error: "Failed to fetch admissions policies" });

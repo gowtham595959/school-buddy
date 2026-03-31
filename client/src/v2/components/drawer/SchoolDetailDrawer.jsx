@@ -14,8 +14,13 @@ import AllocationPanel from "./AllocationPanel";
 import GcseResultsPanel from "./GcseResultsPanel";
 import AlevelResultsPanel from "./AlevelResultsPanel";
 import Destinations1618Panel from "./Destinations1618Panel";
+import SubjectsPanel from "./SubjectsPanel";
+import InspectionsPanel from "./InspectionsPanel";
 import { useGcseResults } from "../../domains/gcse/useGcseResults";
 import { useKs5Results } from "../../domains/ks5/useKs5Results";
+import { useInspections } from "../../domains/inspections/useInspections";
+import { useSchoolSubjects } from "../../domains/schoolSubjects/useSchoolSubjects";
+import { getInspectionOverallChip } from "../../utils/inspectionGradeUtils";
 
 const RESULTS_YEAR_TAB_ORDER = [2025, 2024, 2023];
 
@@ -261,6 +266,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
   const admissionsPoliciesEnabled = enabled.exams || enabled.allocations;
   const {
     policies: admissionsPolicies,
+    allocationHistory: admissionsAllocationHistory,
     loading: admissionsLoading,
     error: admissionsError,
   } = useAdmissionsPolicies(school?.id, admissionsPoliciesEnabled);
@@ -299,9 +305,9 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
     const gcse89n = Number(row.gcse_entries_pct_grade_8_9);
     const showGcseOutstandingStar =
       Number.isFinite(gcse89n) && gcse89n > GCSE_CHIP_GRADES_89_STAR_PCT;
-    const gcseChipTitle = `Latest loaded year — grades 8–9 share of counted GCSE entries (DfE). Chip is green at ≥${GCSE_CHIP_GRADES_89_HIGH_PCT}%, yellow below.${
+    const gcseChipTitle = `Latest loaded year — grades 8 or 9 share of counted GCSE entries (DfE). Chip is green at ≥${GCSE_CHIP_GRADES_89_HIGH_PCT}%, yellow below.${
       showGcseOutstandingStar
-        ? ` ★ Shown when grades 8–9 are above ${GCSE_CHIP_GRADES_89_STAR_PCT}%.`
+        ? ` ★ Shown when grades 8 or 9 are above ${GCSE_CHIP_GRADES_89_STAR_PCT}%.`
         : ""
     }`;
     return (
@@ -309,7 +315,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         className={["v2-drawer-chip", tierClass].filter(Boolean).join(" ")}
         title={gcseChipTitle}
       >
-        Grades 8–9: {pct}
+        Grades 8 or 9 : {pct}
         {showGcseOutstandingStar ? (
           <span className="v2-drawer-chip__results-outstanding-star" aria-hidden>
             ★
@@ -323,6 +329,25 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
     school?.id,
     enabled.alevel && Boolean(school?.id)
   );
+
+  const { rows: inspectionRows, loading: inspectionLoading, error: inspectionError } = useInspections(
+    school?.id,
+    enabled.inspection && Boolean(school?.id)
+  );
+
+  const inspectionHeaderPreview = useMemo(() => {
+    if (!enabled.inspection || inspectionLoading || inspectionError || !inspectionRows?.length) return null;
+    const latest = inspectionRows[0];
+    const chip = getInspectionOverallChip(latest?.overall_grade);
+    return (
+      <span
+        className={`v2-drawer-chip v2-drawer-chip--single-line v2-inspection-grade-chip v2-inspection-grade-chip--${chip.tier}`}
+        title="Latest published overall effectiveness (England — see Inspections panel for date and links)."
+      >
+        {chip.label}
+      </span>
+    );
+  }, [enabled.inspection, inspectionLoading, inspectionError, inspectionRows]);
 
   const alevelHeaderPreview = useMemo(() => {
     if (!enabled.alevel || ks5Loading || ks5Error || ks5Rows.length === 0) return null;
@@ -350,7 +375,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         className={["v2-drawer-chip", tierClass].filter(Boolean).join(" ")}
         title={alevelChipTitle}
       >
-        % A* or A: {pct}
+        A* or A : {pct}
         {showAlevelOutstandingStar ? (
           <span className="v2-drawer-chip__results-outstanding-star" aria-hidden>
             ★
@@ -359,6 +384,35 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
       </span>
     );
   }, [enabled.alevel, ks5Loading, ks5Error, ks5Rows]);
+
+  const { rows: subjectRows, loading: subjectsLoading, error: subjectsError } = useSchoolSubjects(
+    school?.id,
+    enabled.subjects && Boolean(school?.id)
+  );
+
+  const subjectsHeaderPreview = useMemo(() => {
+    if (!enabled.subjects) return null;
+    if (subjectsLoading || subjectsError) return null;
+    const list = Array.isArray(subjectRows) ? subjectRows : [];
+    const gcseCount = list.filter((r) => r.level !== "alevel").length;
+    const alevelCount = list.filter((r) => r.level === "alevel").length;
+    return (
+      <>
+        <span
+          className="v2-drawer-chip v2-drawer-chip--single-line"
+          title="Count of Key Stage 4 subject lines in DfE data (performance-table qualifications)."
+        >
+          GCSE : {gcseCount}
+        </span>
+        <span
+          className="v2-drawer-chip v2-drawer-chip--single-line"
+          title="Count of post-16 subject lines in DfE data (e.g. GCE A level and equivalent)."
+        >
+          A-Levels : {alevelCount}
+        </span>
+      </>
+    );
+  }, [enabled.subjects, subjectsLoading, subjectsError, subjectRows]);
 
   const destinationsHeaderPreview = useMemo(() => {
     if (!enabled.destinations || !school) return null;
@@ -376,7 +430,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         className="v2-drawer-chip v2-drawer-chip--open-seats-neutral v2-drawer-chip--single-line"
         title="School-reported Oxbridge offers (see panel for full label, source link, and DfE destinations)."
       >
-        Oxbridge: {n}
+        Oxbridge : {n}
       </span>
     );
   }, [enabled.destinations, school]);
@@ -563,6 +617,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
           <Section title="11+ Allocation details" icon={DRAWER_ICONS.allocation}>
             <AllocationPanel
               policies={admissionsPolicies}
+              allocationHistory={admissionsAllocationHistory}
               loading={admissionsLoading}
               error={admissionsError}
             />
@@ -597,21 +652,25 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
 
         {/* 9) Inspections */}
         {enabled.inspection ? (
-          <Section title="Inspections" icon={DRAWER_ICONS.inspection}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: Ofsted inspection history + deep ratings
-              + link.)
-            </div>
+          <Section
+            title="Inspections"
+            icon={DRAWER_ICONS.inspection}
+            preview={inspectionHeaderPreview}
+            previewClassName="v2-drawer-section-preview--nowrap"
+          >
+            <InspectionsPanel schoolId={school?.id} enabled={enabled.inspection} />
           </Section>
         ) : null}
 
-        {/* 10) GCSE Subjects */}
+        {/* 10) Subjects (KS4 + post-16 entries) */}
         {enabled.subjects ? (
-          <Section title="GCSE Subjects" icon={DRAWER_ICONS.subjects}>
-            <div className="v2-muted">
-              (MVP placeholder — next step: subjects list with exam boards +
-              compulsory flag.)
-            </div>
+          <Section
+            title="Subjects"
+            icon={DRAWER_ICONS.subjects}
+            preview={subjectsHeaderPreview}
+            previewClassName="v2-drawer-section-preview--subjects-chips"
+          >
+            <SubjectsPanel schoolId={school?.id} enabled={enabled.subjects} />
           </Section>
         ) : null}
       </div>

@@ -93,12 +93,25 @@ function computeOpenSeatsDisplayValue(payload, school) {
   const defsAll = payload.definitions ?? [];
   const policies = payload.admissionsPolicies ?? [];
 
-  const definitionsForYear =
+  let definitionsForYear =
     effectiveYear != null
       ? defsAll
           .filter((d) => d.catchment_year === effectiveYear)
           .sort((a, b) => (a.catchment_priority ?? 99) - (b.catchment_priority ?? 99))
       : [];
+
+  if (definitionsForYear.length === 0 && defsAll.length > 0) {
+    const yf = defsAll
+      .map((d) => d.catchment_year)
+      .filter((y) => y != null && Number.isFinite(Number(y)))
+      .map((y) => Number(y));
+    const fb = yf.length ? Math.max(...yf) : null;
+    if (fb != null) {
+      definitionsForYear = defsAll
+        .filter((d) => Number(d.catchment_year) === fb)
+        .sort((a, b) => (a.catchment_priority ?? 99) - (b.catchment_priority ?? 99));
+    }
+  }
 
   const policyForYear =
     effectiveYear != null ? policies.find((p) => p.entry_year === effectiveYear) ?? null : null;
@@ -133,7 +146,7 @@ export function getOpenSeatsHeaderChipInfo(payload, school) {
 
   const value = computeOpenSeatsDisplayValue(payload, school);
   const valueTrimmed = value != null && String(value).trim() !== "" ? String(value).trim() : "";
-  const label = valueTrimmed ? `Open seats - ${valueTrimmed}` : "Open seats - 0";
+  const label = valueTrimmed ? `Open seats : ${valueTrimmed}` : "Open seats : 0";
 
   let tier;
   if (!valueTrimmed) {
@@ -147,7 +160,7 @@ export function getOpenSeatsHeaderChipInfo(payload, school) {
 }
 
 /**
- * Label for the collapsed Catchment section chip, e.g. "Open seats - 100".
+ * Label for the collapsed Catchment section chip, e.g. "Open seats : 100".
  * @deprecated Prefer getOpenSeatsHeaderChipInfo for styling.
  */
 export function getOpenSeatsHeaderChipLabel(payload, school) {

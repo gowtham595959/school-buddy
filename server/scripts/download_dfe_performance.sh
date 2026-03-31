@@ -35,3 +35,7 @@ echo "Done. Listing school-level CSV paths in KS4 zip:"
 unzip -l "$OUT/ks4-2024-25_all_files.zip" | grep -E 'performance_tables_schools|subject_school_all' || true
 echo "Institution-level paths in 16–18 zip:"
 unzip -l "$OUT/a-level-16-18-2024-25_all_files.zip" | grep -E 'institution_performance|institution_subject' || true
+
+echo ""
+echo "To refresh drawer “Subjects” (GCSE + A level entry counts from these ZIPs):"
+echo "  DATABASE_URL=... PYTHONPATH=server/scripts python3 server/scripts/load_school_subjects_dfe.py"

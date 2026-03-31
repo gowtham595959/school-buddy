@@ -36,6 +36,14 @@ services:
       - ./db/migrations/045_schools_has_results_destinations.sql:/docker-entrypoint-initdb.d/20-schools-has-results-destinations.sql
       - ./db/migrations/046_data_source_refresh_log_1618_destinations.sql:/docker-entrypoint-initdb.d/21-data-source-1618-destinations.sql
       - ./db/migrations/047_schools_oxbridge_offers.sql:/docker-entrypoint-initdb.d/22-schools-oxbridge-offers.sql
+      - ./db/migrations/048_school_sutton_grammar.sql:/docker-entrypoint-initdb.d/23-school-sutton-grammar.sql
+      - ./db/migrations/049_admissions_policies_sutton_grammar.sql:/docker-entrypoint-initdb.d/24-admissions-policies-sutton-grammar.sql
+      - ./db/migrations/050_sutton_grammar_catchments.sql:/docker-entrypoint-initdb.d/25-sutton-grammar-catchments.sql
+      - ./db/migrations/051_admissions_allocation_history_la_profiles.sql:/docker-entrypoint-initdb.d/26-admissions-allocation-history-profiles.sql
+      - ./db/migrations/052_gcse_subjects.sql:/docker-entrypoint-initdb.d/27-gcse-subjects.sql
+      - ./db/migrations/053_inspections_slim.sql:/docker-entrypoint-initdb.d/28-inspections-slim.sql
+      - ./db/migrations/054_inspections_clear_summary.sql:/docker-entrypoint-initdb.d/29-inspections-clear-summary.sql
+      - ./db/migrations/055_school_subjects.sql:/docker-entrypoint-initdb.d/30-school-subjects.sql
     command: >
       postgres
       -c listen_addresses='*'
