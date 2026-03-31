@@ -74,8 +74,17 @@ export default function CatchmentPanel({ payload, school, loading, error, select
 
   const definitionsForYear = useMemo(() => {
     const defs = payload?.definitions ?? [];
+    const forYear = defs.filter((d) => d.catchment_year === effectiveYear);
+    if (forYear.length > 0) {
+      return forYear.sort((a, b) => (a.catchment_priority ?? 99) - (b.catchment_priority ?? 99));
+    }
+    const fallbackYear = defs
+      .map((d) => d.catchment_year)
+      .filter((y) => y != null)
+      .sort((a, b) => (b || 0) - (a || 0))[0];
+    if (fallbackYear == null) return [];
     return defs
-      .filter((d) => d.catchment_year === effectiveYear)
+      .filter((d) => d.catchment_year === fallbackYear)
       .sort((a, b) => (a.catchment_priority ?? 99) - (b.catchment_priority ?? 99));
   }, [payload?.definitions, effectiveYear]);
 

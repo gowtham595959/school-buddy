@@ -9,6 +9,12 @@ const { fetchKs5ResultsForSchoolId } = require("../domains/ks5/ks5.service");
 const {
   fetchDestinations1618ForSchoolId,
 } = require("../domains/destinations1618/destinations1618.service");
+const {
+  fetchSchoolSubjectsForSchoolId,
+} = require("../domains/schoolSubjects/schoolSubjects.service");
+const {
+  fetchInspectionsForSchoolId,
+} = require("../domains/inspections/inspections.service");
 
 /**
  * GET /api/schools/:schoolId/gcse-results
@@ -51,6 +57,35 @@ router.get("/:schoolId/destinations-1618", async (req, res) => {
     const status = err.status || 500;
     if (status >= 500) console.error("❌ 16–18 destinations:", err.message);
     res.status(status).json({ error: err.message || "Failed to fetch destinations" });
+  }
+});
+
+/**
+ * GET /api/schools/:schoolId/subjects
+ * KS4 and 16–18 subject entry rows (DfE-style).
+ */
+router.get("/:schoolId/subjects", async (req, res) => {
+  try {
+    const rows = await fetchSchoolSubjectsForSchoolId(req.params.schoolId);
+    res.json(rows);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("❌ Subjects:", err.message);
+    res.status(status).json({ error: err.message || "Failed to fetch subjects" });
+  }
+});
+
+/**
+ * GET /api/schools/:schoolId/inspections
+ */
+router.get("/:schoolId/inspections", async (req, res) => {
+  try {
+    const rows = await fetchInspectionsForSchoolId(req.params.schoolId);
+    res.json(rows);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error("❌ Inspections:", err.message);
+    res.status(status).json({ error: err.message || "Failed to fetch inspections" });
   }
 });
 
