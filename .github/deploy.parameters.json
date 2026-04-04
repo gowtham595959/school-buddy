@@ -25,6 +25,8 @@
     "POSTGRES_USER": "postgres",
     "POSTGRES_DB": "schoolmap",
     "NODE_ENV": "production",
+    "RUN_DB_MIGRATIONS": "0",
+    "_comment_RUN_DB_MIGRATIONS": "0 = skip db/migrations on boot (backup-only). 1 = run migrations (and schema_migrations ledger).",
     "_secrets_comment": "POSTGRES_PASSWORD_SCHOOL_BUDDY, ACR_USERNAME_SCHOOL_BUDDY, ACR_PASSWORD_SCHOOL_BUDDY, GOOGLE_MAPS_API_KEY — store in GitHub Secrets; never put secret values here"
   }
 }
