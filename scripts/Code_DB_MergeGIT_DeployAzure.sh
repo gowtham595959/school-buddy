@@ -12,8 +12,10 @@
 #   all "message"       Full: stage, commit, push, merge-main
 #
 # DB (Azure sync — uses local Docker schoolbuddy-postgis, same on Mac or Codespace):
-#   db-migrations       Run migrations on local Docker DB
-#   db-full             Local DB → pg_dump → upload restore.backup → restart Azure Web App
+#   db-migrations         Run migrations on local Docker DB (each file once)
+#   db-migrate-baseline   Mark all migrations applied (one-time; see db_sync_azure.sh)
+#   db-full               Local DB snapshot → pg_dump → upload restore.backup → restart Azure (no migrations)
+#   db-full-sql-files     Run all local migrations first, then same as db-full
 #
 # Usage: ./scripts/Code_DB_MergeGIT_DeployAzure.sh [command] [args]
 # --------------------------------------------------------
@@ -62,8 +64,10 @@ show_script_options() {
   echo "    $0 all \"message\"       Full: stage, commit, push, merge-main"
   echo ""
   echo "  DB (Azure sync):"
-  echo "    $0 db-migrations       Run migrations on local DB"
-  echo "    $0 db-full             Full sync: backup → upload → restart Azure"
+  echo "    $0 db-migrations          Run migrations on local DB"
+  echo "    $0 db-migrate-baseline    Mark all .sql applied (one-time if DB already migrated)"
+  echo "    $0 db-full                Full sync: backup → upload → restart Azure (no migrations)"
+  echo "    $0 db-full-sql-files      Migrations on local → backup → upload → restart Azure"
   echo ""
 }
 
@@ -224,6 +228,11 @@ do_db_migrations() {
   "$SCRIPT_DIR/db_sync_azure.sh" migrate
 }
 
+do_db_migrate_baseline() {
+  log_section "DB: Baseline migration ledger (mark all .sql as applied)"
+  "$SCRIPT_DIR/db_sync_azure.sh" migrate-baseline
+}
+
 do_db_full() {
   log_section "DB: Full sync local Docker → Azure"
 
@@ -246,10 +255,18 @@ do_db_full() {
     exit 1
   fi
 
-  "$SCRIPT_DIR/db_sync_azure.sh" migrate
   "$SCRIPT_DIR/db_sync_azure.sh" backup
   "$SCRIPT_DIR/db_sync_azure.sh" upload
-  log_ok "Full sync complete. Wait 2–3 min for Azure to restore."
+  log_ok "Full sync complete. Wait 2–3 min after Web App restart."
+  log_warn "Azure only auto-restores when schoolmap does not exist yet. If data did not change:"
+  log_warn "  1) Deploy image with latest docker/start.sh"
+  log_warn "  2) Web App Configuration: RUN_DB_MIGRATIONS=0 skips SQL migrations on boot (see deploy.parameters.json)"
+  log_warn "  3) Azure Portal → RESTORE_SCHOOLMAP_FROM_BACKUP = 1 → restart → remove (one-shot new backup)"
+}
+
+do_db_full_sql_files() {
+  do_db_migrations
+  do_db_full
 }
 
 # ─── Main ───────────────────────────────────────────────────────────────────
@@ -287,8 +304,14 @@ case "${1:-}" in
   db-migrations)
     do_db_migrations
     ;;
+  db-migrate-baseline)
+    do_db_migrate_baseline
+    ;;
   db-full)
     do_db_full
+    ;;
+  db-full-sql-files)
+    do_db_full_sql_files
     ;;
   *)
     do_status

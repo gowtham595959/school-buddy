@@ -9,6 +9,16 @@ set -e
 # DO NOT mount Azure Files to that path — Azure Files (SMB/CIFS) does not
 # support POSIX ownership and will break initdb.
 # Mount Azure Files ONLY to /docker-backup for the .backup restore file.
+#
+# After uploading a new restore.backup (e.g. db-full), Azure will NOT re-apply it on
+# restart while schoolmap already exists. One-shot: set App Setting
+#   RESTORE_SCHOOLMAP_FROM_BACKUP=1
+# restart the Web App, wait for boot, then REMOVE the setting (or restores wipe data every boot).
+#
+# SQL migrations (/app/db/migrations/*.sql): set App Setting
+#   RUN_DB_MIGRATIONS=0
+# when the pg_restore backup is the full source of truth (recommended with db-full).
+# Values that skip migrations: 0, false, no, off (case-insensitive). Unset or 1 = run migrations.
 # ============================================================
 
 PG_DATA="/var/lib/postgresql/data"
@@ -34,22 +44,40 @@ echo ">>> [DB] PostgreSQL started."
 # ── 3. Set postgres password ─────────────────────────────────
 gosu postgres psql -c "ALTER USER \"$PG_USER\" PASSWORD '$PG_PASSWORD';"
 
-# ── 4. Create DB and restore backup (runs only if DB missing) ─
+# ── 4. Create DB and restore backup ───────────────────────────
 DB_EXISTS=$(gosu postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$PG_DB'")
 
-if [ "$DB_EXISTS" != "1" ]; then
+restore_from_backup() {
+  if [ ! -f "$BACKUP_FILE" ]; then
+    echo ">>> [DB] WARNING: No backup file at $BACKUP_FILE — cannot restore."
+    return 1
+  fi
+  echo ">>> [DB] Restoring from $BACKUP_FILE ..."
+  gosu postgres pg_restore \
+    --no-owner \
+    --no-privileges \
+    -d "$PG_DB" \
+    "$BACKUP_FILE" \
+    || echo ">>> [DB] pg_restore finished (warnings above are non-fatal)."
+  echo ">>> [DB] Restore complete."
+}
+
+if [ "${RESTORE_SCHOOLMAP_FROM_BACKUP:-}" = "1" ] && [ -f "$BACKUP_FILE" ]; then
+  echo ">>> [DB] RESTORE_SCHOOLMAP_FROM_BACKUP=1 — reloading $PG_DB from share (see header comment)."
+  if [ "$DB_EXISTS" = "1" ]; then
+    gosu postgres psql -d postgres -c \
+      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$PG_DB' AND pid <> pg_backend_pid();" \
+      >/dev/null 2>&1 || true
+    gosu postgres dropdb "$PG_DB" || true
+  fi
+  gosu postgres createdb "$PG_DB"
+  restore_from_backup
+elif [ "$DB_EXISTS" != "1" ]; then
   echo ">>> [DB] Creating database '$PG_DB'..."
   gosu postgres createdb "$PG_DB"
 
   if [ -f "$BACKUP_FILE" ]; then
-    echo ">>> [DB] Restoring from $BACKUP_FILE ..."
-    gosu postgres pg_restore \
-      --no-owner \
-      --no-privileges \
-      -d "$PG_DB" \
-      "$BACKUP_FILE" \
-      || echo ">>> [DB] pg_restore finished (warnings above are non-fatal)."
-    echo ">>> [DB] Restore complete."
+    restore_from_backup
   else
     echo ">>> [DB] WARNING: No backup file at $BACKUP_FILE — starting with empty database."
     echo "         Upload your .backup file to the Azure Files 'postgres-backup' share"
@@ -57,17 +85,44 @@ if [ "$DB_EXISTS" != "1" ]; then
   fi
 else
   echo ">>> [DB] Database '$PG_DB' already exists — skipping restore."
+  echo "         (Upload a new restore.backup then set RESTORE_SCHOOLMAP_FROM_BACKUP=1 once to apply it.)"
 fi
 
-# ── 4b. Run migrations (schema updates; use IF NOT EXISTS for idempotency) ─
-if [ -d /app/db/migrations ] && [ -n "$(ls -A /app/db/migrations/*.sql 2>/dev/null)" ]; then
-  echo ">>> [DB] Running migrations..."
-  for f in /app/db/migrations/*.sql; do
+# ── 4b. SQL migrations (optional — off when backup is full DB source of truth) ─
+RUN_DB_MIGRATIONS_NORM=$(echo "${RUN_DB_MIGRATIONS:-1}" | tr '[:upper:]' '[:lower:]')
+SKIP_SQL_MIGRATIONS=0
+case "$RUN_DB_MIGRATIONS_NORM" in
+  0|false|no|off) SKIP_SQL_MIGRATIONS=1 ;;
+esac
+
+if [ "$SKIP_SQL_MIGRATIONS" = "1" ]; then
+  echo ">>> [DB] Skipping /app/db/migrations (RUN_DB_MIGRATIONS=$RUN_DB_MIGRATIONS). Using DB as restored from backup only."
+elif [ -d /app/db/migrations ] && [ -n "$(ls -A /app/db/migrations/*.sql 2>/dev/null)" ]; then
+  echo ">>> [DB] Running migrations (skipped per file if already in schema_migrations)..."
+  gosu postgres psql -d "$PG_DB" -v ON_ERROR_STOP=1 -c \
+    "CREATE TABLE IF NOT EXISTS schema_migrations (
+       filename TEXT PRIMARY KEY,
+       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+     );"
+  applied=0
+  skipped=0
+  while IFS= read -r f; do
     [ -f "$f" ] || continue
-    echo ">>> [DB]   Applying $(basename "$f")..."
+    base=$(basename "$f")
+    already=$(gosu postgres psql -d "$PG_DB" -tAc \
+      "SELECT 1 FROM schema_migrations WHERE filename = '${base//\'/\'\'}' LIMIT 1;" 2>/dev/null | tr -d '[:space:]')
+    if [ "$already" = "1" ]; then
+      echo ">>> [DB]   Skip (applied) $base"
+      skipped=$((skipped + 1))
+      continue
+    fi
+    echo ">>> [DB]   Applying $base..."
     gosu postgres psql -d "$PG_DB" -f "$f" -v ON_ERROR_STOP=1
-  done
-  echo ">>> [DB] Migrations complete."
+    gosu postgres psql -d "$PG_DB" -v ON_ERROR_STOP=1 -c \
+      "INSERT INTO schema_migrations (filename) VALUES ('${base//\'/\'\'}');"
+    applied=$((applied + 1))
+  done < <(ls -1 /app/db/migrations/*.sql 2>/dev/null | sort)
+  echo ">>> [DB] Migrations complete ($applied applied, $skipped skipped)."
 fi
 
 # ── 5. Start Node.js API ─────────────────────────────────────
