@@ -81,9 +81,10 @@ On every container start, `start.sh` runs in order:
 1. **PostgreSQL init** — `initdb` only if `/var/lib/postgresql/data/PG_VERSION` doesn't exist (i.e., first boot)
 2. **PostgreSQL start** — `pg_ctl start`
 3. **Set password** — `ALTER USER postgres PASSWORD '...'`
-4. **DB creation & restore** — Creates `schoolmap` DB and runs `pg_restore` from `/docker-backup/restore.backup` (only if the DB doesn't already exist)
-5. **Node.js start** — `node src/index.js &` with `DATABASE_URL` constructed from env vars
-6. **nginx start** — Foreground (`nginx -g 'daemon off;'`), keeps the container alive
+4. **DB creation & restore** — Creates `schoolmap` DB and runs `pg_restore` from `/docker-backup/restore.backup` when the DB is new, or when `RESTORE_SCHOOLMAP_FROM_BACKUP=1` triggers a forced re-restore (see `docker/start.sh` comments)
+5. **SQL migrations (optional)** — If `RUN_DB_MIGRATIONS` is unset or `1`, applies `db/migrations/*.sql` once each (ledger table). If `RUN_DB_MIGRATIONS` is `0` / `false` / `no` / `off`, this step is skipped so the backup remains the single source of truth
+6. **Node.js start** — `node src/index.js &` with `DATABASE_URL` constructed from env vars
+7. **nginx start** — Foreground (`nginx -g 'daemon off;'`), keeps the container alive
 
 ### Azure Files mount
 
@@ -410,10 +411,13 @@ These environment variables are set on the Azure Web App by the pipeline and are
 | `POSTGRES_USER` | `deploy.parameters.json` | `postgres` | PostgreSQL superuser name |
 | `POSTGRES_DB` | `deploy.parameters.json` | `schoolmap` | Database name |
 | `NODE_ENV` | `deploy.parameters.json` | `production` | Node.js environment mode |
+| `RUN_DB_MIGRATIONS` | `deploy.parameters.json` | `0` in repo | `0` = skip `db/migrations` on boot (use `restore.backup` only); `1` = run migrations after restore |
 | `POSTGRES_PASSWORD` | GitHub Secret | — | PostgreSQL password (injected securely) |
 | `GOOGLE_MAPS_API_KEY` | GitHub Secret | — | Required for transport route feature |
 
 > `DATABASE_URL` is constructed at runtime inside `start.sh` from the above variables and is not set directly.
+
+To push a new database snapshot from local Docker to the share, use `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full` (see [DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md)).
 
 ---
 
@@ -424,8 +428,9 @@ When a freshly deployed container starts for the first time (i.e., the DB doesn'
 1. Runs `initdb` to create the PostgreSQL data directory
 2. Creates the `schoolmap` database
 3. Runs `pg_restore --no-owner --no-privileges -d schoolmap /docker-backup/restore.backup`
+4. Optionally runs SQL migrations — **only if** `RUN_DB_MIGRATIONS` is not disabled (see [Section 10](#10-app-settings-reference))
 
-This means the DB is populated from the backup file without any manual intervention. The restore runs once and is skipped on subsequent restarts because the DB already exists.
+This means the DB is populated from the backup file without any manual intervention. The restore runs once and is skipped on subsequent restarts because the DB already exists (unless you use the one-shot restore app setting).
 
 ### Keeping the backup current
 
@@ -433,17 +438,15 @@ Because the PostgreSQL data directory is ephemeral (lives on the container's loc
 - The backup file at `/docker-backup/restore.backup` is kept up to date, **or**
 - The application is migrated to an external managed PostgreSQL service (e.g., Azure Database for PostgreSQL)
 
-To create and upload a fresh backup:
+To create and upload a fresh backup from **local Docker** (typical):
+
 ```bash
-# From inside the running container or a local dev environment
-pg_dump -Fc -d schoolmap -f /tmp/restore.backup
-# Upload to Azure Files
-az storage file upload \
-  --account-name schoolbuddystorage \
-  --share-name postgres-backup \
-  --source /tmp/restore.backup \
-  --path restore.backup
+source scripts/azure.env   # AZURE_STORAGE_ACCOUNT, etc.
+az login
+./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
 ```
+
+Manual equivalent: create a custom-format dump, upload as `restore.backup`, restart the Web App. See [DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md) for `db-full-sql-files` (includes local `migrate` first).
 
 ---
 

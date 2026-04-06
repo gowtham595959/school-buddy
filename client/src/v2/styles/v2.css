@@ -187,6 +187,49 @@ html, body, #root {
   align-items: center;
 }
 
+/* Focused school: Leaflet DivIcon wrapper + dashed ring (HTML/CSS animates reliably) */
+.leaflet-div-icon.v2-school-highlight-leaflet {
+  background: transparent !important;
+  border: none !important;
+}
+
+.v2-school-highlight-disk {
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2.5px dashed rgba(37, 99, 235, 0.82);
+  background: rgba(59, 130, 246, 0.06);
+  animation:
+    v2-school-highlight-spin-soft 26s linear infinite,
+    v2-school-highlight-pulse-soft 3.2s ease-in-out infinite;
+}
+
+@keyframes v2-school-highlight-spin-soft {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Opacity-only pulse so it doesn’t fight spin’s transform */
+@keyframes v2-school-highlight-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-school-highlight-disk {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
 .v2-geo-label-text--small {
   font-size: 9px;
   font-weight: 500;
@@ -326,6 +369,17 @@ html, body, #root {
 .v2-map-wrap .leaflet-container {
   height: 100%;
   width: 100%;
+}
+
+/* Hover label above the school pin; offset tuned in SchoolMarkersV2Layer. */
+.leaflet-tooltip.v2-marker-tooltip-school {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
 }
 
 .v2-legend {
@@ -1104,8 +1158,42 @@ html, body, #root {
   font-size: 11px;
 }
 
-/* School row highlight when its drawer is open */
-/* Highlight when drawer, transport, or catchment is active */
+/* Primary row: matches map ring / last focus (drawer, transport, or row click) */
+.v2-school-row--focused {
+  background: #e9f2fa;
+  border-color: #b8ccf7;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.v2-school-row--focused .v2-school-name {
+  font-weight: 600;
+}
+
+.v2-school-row--focused .v2-icon-btn--active {
+  background: transparent;
+  color: #2563eb;
+  border-color: #2563eb;
+  border-width: 2px;
+}
+
+/*
+ * Catchment on map only — secondary vs solid “focused” row.
+ * Dashed frame + left rail reads on #fafafa panels without competing with focus.
+ */
+.v2-school-row--catchment-only {
+  --v2-catchment-rail: #64748b;
+  background: #e2e7f0;
+  border: 1px dashed #7788a0;
+  border-left: 3px solid var(--v2-catchment-rail);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.v2-school-row--catchment-only .v2-school-name {
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Legacy aliases */
 .v2-school-row--highlighted {
   background: #e9f2fa;
   border-color: #c7dafe;
@@ -1118,7 +1206,6 @@ html, body, #root {
   border-width: 2px;
 }
 
-/* Legacy alias for backwards compatibility */
 .v2-school-row--drawer-open {
   background: #e9f2fa;
   border-color: #c7dafe;

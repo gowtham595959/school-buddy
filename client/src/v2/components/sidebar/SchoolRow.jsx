@@ -10,15 +10,19 @@ export default function SchoolRow({
   hoverTitle, // ✅ additive
   onOpenDetails, // ✅ additive
   onRowClick, // ✅ additive: close drawer when clicking another school
-  isDrawerOpen, // ✅ additive: highlight when this school's drawer is open
-  isTransportOpen, // ✅ additive: highlight when transport panel is open
-  isCatchmentSelected, // ✅ additive: highlight when catchment shown on map
+  isDrawerOpen, // › button active
+  isTransportOpen, // bus button active
+  isCatchmentSelected, // checkbox on (catchment on map)
+  /** True when this school is the map pan/ring focus (drawer, transport, or last row focus). */
+  isMapFocused = false,
 }) {
-  const isHighlighted =
-    isDrawerOpen || isTransportOpen || isCatchmentSelected;
+  const isCatchmentOnly =
+    isCatchmentSelected && !isMapFocused;
+
   const rowClass = [
     "v2-school-row",
-    isHighlighted ? "v2-school-row--highlighted" : "",
+    isMapFocused ? "v2-school-row--focused" : "",
+    isCatchmentOnly ? "v2-school-row--catchment-only" : "",
   ]
     .filter(Boolean)
     .join(" ");

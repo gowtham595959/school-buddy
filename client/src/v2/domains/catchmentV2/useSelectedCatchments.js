@@ -27,8 +27,16 @@ export function useSelectedCatchments() {
 
     // Only fetch when selecting (not deselecting) and not cached
     if (!currentlySelected && !cacheRef.current[id]) {
-      const payload = await fetchCatchmentsV2BySchoolId(id);
-      setCatchmentsBySchoolId((prev) => ({ ...prev, [id]: payload }));
+      try {
+        const payload = await fetchCatchmentsV2BySchoolId(id);
+        setCatchmentsBySchoolId((prev) => ({ ...prev, [id]: payload }));
+      } catch {
+        // Still cache so pan/zoom can treat as “no geometry” (e.g. network error).
+        setCatchmentsBySchoolId((prev) => ({
+          ...prev,
+          [id]: { definitions: [], geometriesByKey: {} },
+        }));
+      }
     }
   }, []);
 

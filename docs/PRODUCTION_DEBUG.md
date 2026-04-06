@@ -107,13 +107,15 @@ If the backup file is missing:
      --path restore.backup
    ```
 
-3. **Restart the Web App** (container will re-run restore on next boot):
+3. **Restart the Web App** (see `docker/start.sh`: a new restore applies when the DB is first created, or when `RESTORE_SCHOOLMAP_FROM_BACKUP=1` is set for a one-shot reload):
 
    ```bash
    az webapp restart --name school-buddy-app --resource-group school-buddy-rg
    ```
 
    Wait 2–3 minutes for restore to complete.
+
+**One-liner from dev machine:** configure `scripts/azure.env`, `az login`, then run `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full` (backup → upload as `restore.backup` → restart). See [DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md).
 
 ---
 

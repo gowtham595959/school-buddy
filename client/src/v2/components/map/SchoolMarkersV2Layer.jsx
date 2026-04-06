@@ -5,6 +5,17 @@ import L from "leaflet";
 
 const DEFAULT_ICON_URL = "/icons/School_red.png";
 
+/**
+ * Dotted ring under the focused pin. DivIcon + CSS animates reliably; SVG CircleMarker
+ * often ignores or fights Leaflet’s SVG transforms.
+ */
+const HIGHLIGHT_DIV_ICON = L.divIcon({
+  className: "v2-school-highlight-leaflet",
+  html: '<div class="v2-school-highlight-disk" aria-hidden="true"></div>',
+  iconSize: [52, 52],
+  iconAnchor: [26, 26],
+});
+
 // small cache so we don’t recreate Leaflet icons every render
 const iconCache = new Map();
 function getIcon(url) {
@@ -21,7 +32,11 @@ function getIcon(url) {
   return icon;
 }
 
-export default function SchoolMarkersV2Layer({ schools }) {
+export default function SchoolMarkersV2Layer({
+  schools,
+  highlightSchoolId = null,
+  onSchoolMarkerClick,
+}) {
   const markers = useMemo(() => {
     if (!Array.isArray(schools)) return [];
 
@@ -45,14 +60,47 @@ export default function SchoolMarkersV2Layer({ schools }) {
 
   return (
     <>
-      {markers.map((m) => (
-        <Marker key={`school:${m.id}`} position={m.pos} icon={getIcon(m.iconUrl)}>
-          {/* hover-only by default (no permanent) */}
-          <Tooltip direction="top" offset={[0, -6]} opacity={1}>
-            {m.name}
-          </Tooltip>
-        </Marker>
-      ))}
+      {markers.map((m) => {
+        const isHighlight =
+          highlightSchoolId != null && m.id === highlightSchoolId;
+
+        return (
+          <React.Fragment key={`school:${m.id}`}>
+            {isHighlight ? (
+              <Marker
+                position={m.pos}
+                icon={HIGHLIGHT_DIV_ICON}
+                interactive={false}
+                zIndexOffset={400}
+              />
+            ) : null}
+            <Marker
+              position={m.pos}
+              icon={getIcon(m.iconUrl)}
+              zIndexOffset={isHighlight ? 650 : 0}
+              eventHandlers={
+                onSchoolMarkerClick
+                  ? {
+                      click(e) {
+                        L.DomEvent.stopPropagation(e);
+                        onSchoolMarkerClick(m.id);
+                      },
+                    }
+                  : undefined
+              }
+            >
+              <Tooltip
+                direction="top"
+                offset={[0, -30]}
+                opacity={1}
+                className="v2-marker-tooltip-school"
+              >
+                {m.name}
+              </Tooltip>
+            </Marker>
+          </React.Fragment>
+        );
+      })}
     </>
   );
 }
