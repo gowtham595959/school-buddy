@@ -93,6 +93,10 @@ school-buddy/
 |--------|---------|
 | First-time setup | `./scripts/setup-local-mac.sh` |
 | Start app | `./scripts/startup.sh` |
-| Run migrations only | `./scripts/db_sync_azure.sh migrate` |
+| Run migrations only (local Docker) | `./scripts/db_sync_azure.sh migrate` |
 | Restore from backup | `./scripts/db_restore_from_backup_snapshot.sh` |
+| Push local DB to Azure (`backup` → upload; no local migrate) | `source scripts/azure.env` then `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full` |
+| Same, but run migrations locally first | `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full-sql-files` |
 | Stop | `./scripts/old/codespace-stop.sh` |
+
+Azure upload needs `az login` and `scripts/azure.env`. See [docs/DB_SYNC_AZURE.md](docs/DB_SYNC_AZURE.md).

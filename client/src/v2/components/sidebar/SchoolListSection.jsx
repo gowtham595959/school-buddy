@@ -55,6 +55,7 @@ export default function SchoolListSection({
   onOpenDetails,
   onRowClick,
   drawerSchoolId,
+  focusedSchoolId,
 
   /** Left panel: visual group — green | blue | yellow */
   sectionAccent,
@@ -138,6 +139,9 @@ export default function SchoolListSection({
                   isDrawerOpen={drawerSchoolId != null && drawerSchoolId === s.id}
                   isTransportOpen={!!transportSchool && transportSchool.id === s.id}
                   isCatchmentSelected={safeSelectedIds.includes(s.id)}
+                  isMapFocused={
+                    focusedSchoolId != null && focusedSchoolId === s.id
+                  }
                 />
 
                 {isOpen ? (

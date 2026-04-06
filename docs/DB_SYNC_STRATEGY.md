@@ -8,8 +8,9 @@ With a large DB (~200MB geojson) and no direct connection to Azure's Postgres, h
 
 | Mode | What it syncs | When to use | Effort |
 |------|---------------|-------------|--------|
-| **Migrations** | Schema + small seed data (≤100 rows) | Every deploy, small changes | Automatic |
-| **Full backup** | Entire DB (schema + all data) | Bulk data changes (GIS, catchments, many schools) | Manual, ~5 min |
+| **Boot migrations** (`RUN_DB_MIGRATIONS=1`) | `db/migrations/*.sql` on container start | Small schema changes without a new backup (optional; **off** in `deploy.parameters.json` today) | Automatic on deploy/restart |
+| **Local migrations + dump** | You run `migrate` locally, then **backup** | Same as above when Azure skips boot migrations (`RUN_DB_MIGRATIONS=0`) | Manual |
+| **Full backup** (`db-full`) | Entire DB via `pg_dump` → `restore.backup` | Bulk data (GIS, catchments), or any change when backup is source of truth | Manual, ~5 min |
 
 ---
 
@@ -19,13 +20,17 @@ With a large DB (~200MB geojson) and no direct connection to Azure's Postgres, h
 Did you change...?
 │
 ├─ Schema (new columns, tables)
-│  └─► Add migration → Deploy. Migrations run on startup. ✅
+│  ├─► Azure RUN_DB_MIGRATIONS=1: add migration → deploy; migrations run on startup.
+│  └─► Azure RUN_DB_MIGRATIONS=0 (default in repo): migrate locally →
+│      ./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
+│      (or one shot: db-full-sql-files = migrate + backup + upload).
 │
 ├─ Small data (a few schools, fees, flags)
-│  └─► Add migration (002_seed_*.sql) → Deploy. ✅
+│  └─► Same split: boot migrations if enabled, else local migrate + db-full.
 │
 └─ Bulk data (new catchments, many schools, geojson)
-   └─► Full backup sync required. Run: ./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
+   └─► Full backup sync: ./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
+       (local Docker DB must already be correct — script does not run migrations).
 ```
 
 ---
@@ -38,7 +43,7 @@ Did you change...?
 | **Geojson is large** | Incremental sync would need to diff 200MB. Complex and error-prone. |
 | **Single backup file** | Azure restores from one file. No "apply delta" without SSH into container. |
 
-**Practical result:** Schema + small data → migrations. Bulk data → full backup.
+**Practical result:** With **`RUN_DB_MIGRATIONS=0`** (current default in deploy config), schema and data reach Azure mainly via **`db-full`**. With **`RUN_DB_MIGRATIONS=1`**, small schema changes can ship as migration files on deploy. Bulk data still favors a full backup.
 
 ---
 
@@ -63,21 +68,28 @@ source scripts/azure.env
 # Add migration
 echo "ALTER TABLE ..." >> db/migrations/003_my_change.sql
 
-# Deploy (GitHub Actions or manual)
-# Migrations run automatically on container start.
+# Local Docker
+./scripts/db_sync_azure.sh migrate
+
+# Azure with RUN_DB_MIGRATIONS=0 (typical): ship schema via backup
+source scripts/azure.env   # az login if needed
+./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
+
+# OR enable boot migrations on the Web App (RUN_DB_MIGRATIONS=1) and deploy;
+# then new migration files apply on container start without a new backup.
 ```
 
 ### 3. Bulk data change (GIS, many schools)
 
 ```bash
-# Ensure az login
-az login
+# Ensure data is correct in local Docker (loaders, SQL, etc.).
+# db-full does not run migrations — use db-full-sql-files if you need migrate first.
 
-# Load Azure config
+az login
 source scripts/azure.env
 
-# Full sync
 ./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full
+# Optional: ./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full-sql-files
 ```
 
 ---
@@ -86,10 +98,12 @@ source scripts/azure.env
 
 | File | Purpose |
 |------|---------|
-| `scripts/Code_DB_MergeGIT_DeployAzure.sh` | One script for Git + DB (see `./scripts/Code_DB_MergeGIT_DeployAzure.sh` for options) |
+| `scripts/Code_DB_MergeGIT_DeployAzure.sh` | One script for Git + DB: `db-full`, `db-full-sql-files`, `db-migrations`, … |
+| `scripts/db_sync_azure.sh` | `backup`, `upload`, `full`, `full-with-migrate`, `migrate`, … |
 | `scripts/azure.env.example` | Template — copy to `azure.env`, add key |
 | `scripts/azure.env` | Your credentials (gitignored) |
-| `db/migrations/*.sql` | Schema + seed data (run on every deploy) |
+| `db/migrations/*.sql` | Schema + seed (local via `migrate`; on Azure only if `RUN_DB_MIGRATIONS` enabled) |
+| `.github/deploy.parameters.json` | Includes `RUN_DB_MIGRATIONS` (repo default skips boot migrations) |
 
 ---
 

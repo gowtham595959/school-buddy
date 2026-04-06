@@ -114,6 +114,8 @@ az storage share create --name $SHARE_BACKUP --account-name $STORAGE_NAME --acco
 
 ### Upload the database backup to Azure Files
 
+For day-to-day updates from a local Docker database, you can use `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full` instead (upload + restart). See [DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md).
+
 ```powershell
 az storage file upload `
   --account-name $STORAGE_NAME `

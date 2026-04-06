@@ -11,6 +11,7 @@ import SelectedCatchmentsLayers from "../components/map/SelectedCatchmentsLayers
 import FitCatchmentBounds from "../components/map/FitCatchmentBounds";
 import SchoolDetailDrawer from "../components/drawer/SchoolDetailDrawer";
 import PanToHomeV2 from "../components/map/PanToHomeV2";
+import PanToSchoolV2 from "../components/map/PanToSchoolV2";
 import HomeMarkerV2Layer from "../components/map/HomeMarkerV2Layer";
 import SetHomeOnMapClickV2 from "../components/map/SetHomeOnMapClickV2";
 import TransportRouteLayer from "../components/transport/TransportRouteLayer";
@@ -42,6 +43,8 @@ const SIDEBAR_STYLE = { minHeight: 0, overflow: "auto" };
 export default function ExplorePage() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [drawerSchool, setDrawerSchool] = useState(null);
+  /** Last school focused from list row or map pin (drawer/transport take precedence on map ring). */
+  const [mapAnchorSchool, setMapAnchorSchool] = useState(null);
 
   const {
     postcode,
@@ -84,8 +87,15 @@ export default function ExplorePage() {
     return schools.filter((s) => !!map?.[s.id]?.inCatchment);
   }, [schools, catchmentCheckBySchoolId]);
 
+  const homeLat = homePosition?.[0];
+  const homeLon = homePosition?.[1];
+  useEffect(() => {
+    setMapAnchorSchool(null);
+  }, [homeLat, homeLon]);
+
   const handleOpenSchoolDetails = useCallback(
     (s) => {
+      setMapAnchorSchool(s);
       setDrawerSchool((prev) => (prev?.id === s.id ? null : s));
       if (transport.transportSchool?.id && transport.transportSchool.id !== s.id) {
         transport.closeTransport();
@@ -96,6 +106,7 @@ export default function ExplorePage() {
 
   const handleSchoolRowClick = useCallback(
     (s) => {
+      setMapAnchorSchool(s);
       setDrawerSchool((prev) => (prev && prev.id !== s.id ? null : prev));
       if (transport.transportSchool?.id && transport.transportSchool.id !== s.id) {
         transport.closeTransport();
@@ -104,9 +115,46 @@ export default function ExplorePage() {
     [transport.transportSchool?.id, transport.closeTransport]
   );
 
+  /**
+   * Map pin: first click = same focus as row click + show catchment (like ticking the checkbox).
+   * Second click = hide catchment and clear drawer/anchor for that school (like unticking).
+   */
+  const handleSchoolMarkerClick = useCallback(
+    (schoolId) => {
+      const s = schools.find((x) => x.id === schoolId);
+      if (!s) return;
+      const id = s.id;
+
+      const isOn = selectedIds.includes(id);
+      if (isOn) {
+        void toggleSchool(id);
+        setMapAnchorSchool((prev) => (prev?.id === id ? null : prev));
+        setDrawerSchool((prev) => (prev?.id === id ? null : prev));
+        if (transport.transportSchool?.id === id) {
+          transport.closeTransport();
+        }
+        return;
+      }
+
+      handleSchoolRowClick(s);
+      void toggleSchool(id);
+    },
+    [
+      schools,
+      selectedIds,
+      toggleSchool,
+      handleSchoolRowClick,
+      transport.transportSchool?.id,
+      transport.closeTransport,
+    ]
+  );
+
   const handleCloseDrawer = useCallback(() => setDrawerSchool(null), []);
 
   const handleToggleLegend = useCallback(() => setLegendOpen((prev) => !prev), []);
+
+  const mapFocusSchool =
+    drawerSchool ?? transport.transportSchool ?? mapAnchorSchool ?? null;
 
   return (
     <div className="v2-page" style={SHELL_STYLE}>
@@ -143,6 +191,7 @@ export default function ExplorePage() {
             onOpenSchoolDetails={handleOpenSchoolDetails}
             onSchoolRowClick={handleSchoolRowClick}
             drawerSchoolId={drawerSchool?.id}
+            focusedSchoolId={mapFocusSchool?.id ?? null}
           />
         </div>
 
@@ -164,7 +213,11 @@ export default function ExplorePage() {
             <HomeMarkerV2Layer position={homePosition} postcode={postcode} />
             <SetHomeOnMapClickV2 onSetHome={setHomeFromMap} />
 
-            <SchoolMarkersV2Layer schools={schools} />
+            <SchoolMarkersV2Layer
+              schools={schools}
+              highlightSchoolId={mapFocusSchool?.id ?? null}
+              onSchoolMarkerClick={handleSchoolMarkerClick}
+            />
 
             <SelectedCatchmentsLayers
               selectedIds={selectedIds}
@@ -180,6 +233,13 @@ export default function ExplorePage() {
             <FitHomeSchoolBounds
               homePosition={homePosition}
               school={transport.transportSchool}
+            />
+
+            <PanToSchoolV2
+              schools={schools}
+              selectedIds={selectedIds}
+              catchmentsBySchoolId={catchmentsBySchoolId}
+              pauseForTransport={!!transport.transportSchool}
             />
 
             <LegendControl

@@ -99,8 +99,12 @@ Without a backup, the database has schema only — restore a `.backup` for full 
 |--------|---------|
 | Start app | `cd .../school-buddy && ./scripts/startup.sh` |
 | Stop | `Ctrl+C` or `./scripts/old/codespace-stop.sh` |
-| Migrations | `./scripts/db_sync_azure.sh migrate` |
+| Migrations (local Docker) | `./scripts/db_sync_azure.sh migrate` |
 | Restore DB | `./scripts/db_restore_from_backup_snapshot.sh` |
+| Sync local DB → Azure (`restore.backup`) | `source scripts/azure.env` → `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full` |
+| Sync with local migrate first | `./scripts/Code_DB_MergeGIT_DeployAzure.sh db-full-sql-files` |
+
+See [DB_SYNC_AZURE.md](./DB_SYNC_AZURE.md) for `RUN_DB_MIGRATIONS` and `db_sync_azure.sh` (`full` vs `full-with-migrate`).
 
 ---
 

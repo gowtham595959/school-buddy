@@ -17,7 +17,7 @@ function radiusToMeters(radius, unit) {
   return r * 1000;
 }
 
-function getBoundsFromPayload(payload) {
+export function getBoundsFromPayload(payload) {
   if (!payload?.school) return null;
 
   const school = payload.school;
@@ -77,9 +77,13 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
   const pendingPanRef = useRef(null);
 
   useEffect(() => {
-    const prev = prevSelectedRef.current;
     const selected = Array.isArray(selectedIds) ? selectedIds : [];
+    const pending = pendingPanRef.current;
+    if (pending != null && !selected.includes(pending)) {
+      pendingPanRef.current = null;
+    }
 
+    const prev = prevSelectedRef.current;
     const newlyAdded = selected.filter((id) => !prev.includes(id));
     prevSelectedRef.current = selected;
 
@@ -92,11 +96,25 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
     const targetId = pendingPanRef.current;
     if (targetId == null) return;
 
+    const selected = Array.isArray(selectedIds) ? selectedIds : [];
+    if (!selected.includes(targetId)) {
+      pendingPanRef.current = null;
+      return;
+    }
+
     const payload = catchmentsBySchoolId?.[targetId];
-    if (!payload?.definitions?.length) return;
+    if (payload == null) return;
+
+    if (!payload.definitions?.length) {
+      pendingPanRef.current = null;
+      return;
+    }
 
     const bounds = getBoundsFromPayload(payload);
-    if (!bounds) return;
+    if (!bounds) {
+      pendingPanRef.current = null;
+      return;
+    }
 
     pendingPanRef.current = null;
 

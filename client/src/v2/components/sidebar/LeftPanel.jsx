@@ -54,6 +54,8 @@ export default function LeftPanel({
   onOpenSchoolDetails,
   onSchoolRowClick,
   drawerSchoolId,
+  /** Matches map ring + pan: drawer → transport → last row click */
+  focusedSchoolId,
 }) {
   const safeAllSchools = Array.isArray(allSchools)
     ? allSchools
@@ -129,6 +131,7 @@ export default function LeftPanel({
         onOpenDetails={onOpenSchoolDetails}
         onRowClick={onSchoolRowClick}
         drawerSchoolId={drawerSchoolId}
+        focusedSchoolId={focusedSchoolId}
         showCatchmentHover
         catchmentCheckBySchoolId={catchmentCheckBySchoolId}
         catchmentLoading={catchmentLoading}
@@ -153,6 +156,7 @@ export default function LeftPanel({
         onOpenDetails={onOpenSchoolDetails}
         onRowClick={onSchoolRowClick}
         drawerSchoolId={drawerSchoolId}
+        focusedSchoolId={focusedSchoolId}
         initialVisible={10}
         loadStep={10}
         showLoadMore
@@ -178,6 +182,7 @@ export default function LeftPanel({
         onOpenDetails={onOpenSchoolDetails}
         onRowClick={onSchoolRowClick}
         drawerSchoolId={drawerSchoolId}
+        focusedSchoolId={focusedSchoolId}
         initialVisible={10}
         loadStep={10}
         showLoadMore
