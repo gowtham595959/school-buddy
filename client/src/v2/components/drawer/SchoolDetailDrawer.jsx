@@ -190,6 +190,32 @@ function ExamSubjectsHeaderChip({ label }) {
   );
 }
 
+/** Instant scroll only — `smooth` is unreliable inside iOS drawers / sheet stacks */
+function scrollBlockIntoParent(container, blockEl, marginTopPx = 8) {
+  if (!container || !blockEl || !blockEl.isConnected) return;
+  const cRect = container.getBoundingClientRect();
+  const bRect = blockEl.getBoundingClientRect();
+  const nextTop = bRect.top - cRect.top + container.scrollTop - marginTopPx;
+  const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+  container.scrollTop = Math.max(0, Math.min(nextTop, maxScroll));
+}
+
+/** Desktop: `.v2-drawer-sidebar` scrolls; phone: `.v2-drawer-scroll` inside the sheet scrolls (inner has overflow visible on desktop). */
+function resolveDrawerScrollContainer(sectionEl, preferredRef) {
+  const preferred = preferredRef?.current;
+  const overflowYScrolls = (el) => {
+    if (!el) return false;
+    const oy = window.getComputedStyle(el).overflowY;
+    return oy === "auto" || oy === "scroll" || oy === "overlay";
+  };
+  if (preferred && overflowYScrolls(preferred)) return preferred;
+  const inner = sectionEl?.closest?.(".v2-drawer-scroll");
+  if (inner && overflowYScrolls(inner)) return inner;
+  const sidebar = sectionEl?.closest?.(".v2-drawer-sidebar");
+  if (sidebar && overflowYScrolls(sidebar)) return sidebar;
+  return preferred || inner || sidebar || null;
+}
+
 function Section({
   title,
   icon,
@@ -200,9 +226,12 @@ function Section({
   onHeaderClick,
   /** Phone sheet: when a row expands, scroll it into view so bodies (e.g. tables) aren’t clipped */
   scrollIntoViewOnExpand = false,
+  /** Scrollable `.v2-drawer-scroll` on phone — manual scroll is reliable when header is outside scroll */
+  scrollParentRef,
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
   const rootRef = useRef(null);
+  const bodyRef = useRef(null);
   const prevOpenRef = useRef(open);
 
   const handleHeaderClick = () => {
@@ -218,25 +247,47 @@ function Section({
       prevOpenRef.current = open;
       return;
     }
-    const wasOpen = prevOpenRef.current;
     prevOpenRef.current = open;
-    if (!open || wasOpen) return;
+    if (!open) return;
 
-    const el = rootRef.current;
-    if (!el) return;
+    const sectionEl = rootRef.current;
+    if (!sectionEl?.isConnected) return;
 
-    const run = (behavior) => {
-      if (!el.isConnected) return;
-      el.scrollIntoView({ block: "start", behavior, inline: "nearest" });
+    const alignSectionToTop = () => {
+      const sec = rootRef.current;
+      if (!sec?.isConnected) return;
+      const c = resolveDrawerScrollContainer(sec, scrollParentRef);
+      if (c) scrollBlockIntoParent(c, sec, 8);
+      else sec.scrollIntoView({ block: "start", behavior: "auto", inline: "nearest" });
     };
 
+    alignSectionToTop();
+    let alive = true;
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => run("smooth"));
+      requestAnimationFrame(() => {
+        if (alive) alignSectionToTop();
+      });
     });
 
-    const t = window.setTimeout(() => run("auto"), 280);
-    return () => clearTimeout(t);
-  }, [open, scrollIntoViewOnExpand]);
+    const bodyEl = bodyRef.current;
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => {
+        alignSectionToTop();
+      });
+      ro.observe(sectionEl);
+      if (bodyEl) ro.observe(bodyEl);
+    }
+
+    const delays = [50, 120, 280, 500, 900, 1400];
+    const timers = delays.map((ms) => window.setTimeout(alignSectionToTop, ms));
+
+    return () => {
+      alive = false;
+      timers.forEach(clearTimeout);
+      ro?.disconnect();
+    };
+  }, [open, scrollIntoViewOnExpand, scrollParentRef, title]);
 
   return (
     <div ref={rootRef} className="v2-drawer-section">
@@ -268,7 +319,11 @@ function Section({
         </button>
       </div>
 
-      {open ? <div className="v2-drawer-section-body">{children}</div> : null}
+      {open ? (
+        <div ref={bodyRef} className="v2-drawer-section-body">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -284,11 +339,15 @@ export default function SchoolDetailDrawer({
   const drawerScrollRef = useRef(null);
 
   useLayoutEffect(() => {
-    if (!scrollToTopOnSchoolChange || school?.id == null) return;
-    const el = drawerScrollRef.current;
-    if (!el) return;
+    if (school?.id == null) return;
+    const inner = drawerScrollRef.current;
+    const sidebar = inner?.closest?.(".v2-drawer-sidebar");
     const go = () => {
-      el.scrollTop = 0;
+      if (scrollToTopOnSchoolChange && inner) inner.scrollTop = 0;
+      if (sidebar && sidebar !== inner) {
+        const oy = window.getComputedStyle(sidebar).overflowY;
+        if (oy === "auto" || oy === "scroll" || oy === "overlay") sidebar.scrollTop = 0;
+      }
     };
     go();
     requestAnimationFrame(go);
@@ -489,12 +548,10 @@ export default function SchoolDetailDrawer({
     );
   }, [enabled.destinations, school]);
 
-  const sectionScrollProps = scrollToTopOnSchoolChange
-    ? { scrollIntoViewOnExpand: true }
-    : {};
+  const sectionScrollProps = { scrollIntoViewOnExpand: true, scrollParentRef: drawerScrollRef };
 
   return (
-    <aside ref={drawerScrollRef} className="v2-right-drawer" aria-label="School details drawer">
+    <aside className="v2-right-drawer" aria-label="School details drawer">
       <div className="v2-drawer-header">
         <div className="v2-drawer-title-wrap">
           <div className="v2-drawer-title">
@@ -515,7 +572,7 @@ export default function SchoolDetailDrawer({
         </button>
       </div>
 
-      <div className="v2-drawer-scroll">
+      <div ref={drawerScrollRef} className="v2-drawer-scroll">
         {/* 1) School Details */}
         <Section
           {...sectionScrollProps}

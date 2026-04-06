@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-leaflet";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { getBoundsFromPayload } from "./FitCatchmentBounds";
 
 const SCHOOL_FOCUS_ZOOM = 13;
+/** Nudge map view up on phone so the pin sits in the area above the bottom card deck */
+const PHONE_PAN_AFTER_FOCUS_PX = 115;
 
 function schoolWithCoords(s) {
   if (!s || s.id == null) return null;
@@ -25,6 +28,7 @@ export default function PanToSchoolV2({
   pauseForTransport = false,
 }) {
   const map = useMap();
+  const isPhone = useMediaQuery("(max-width: 767px)");
   const lastFlyKeyRef = useRef("");
   const prevSelectedIdsRef = useRef([]);
 
@@ -74,7 +78,14 @@ export default function PanToSchoolV2({
     lastFlyKeyRef.current = flyKey;
 
     map.flyTo([lat, lon], SCHOOL_FOCUS_ZOOM, { duration: 0.55 });
-  }, [map, pauseForTransport, id, lat, lon, payloadForSchool, selectedIds]);
+
+    if (isPhone) {
+      const nudge = () => {
+        map.panBy([0, PHONE_PAN_AFTER_FOCUS_PX], { animate: false });
+      };
+      map.once("moveend", nudge);
+    }
+  }, [map, pauseForTransport, id, lat, lon, payloadForSchool, selectedIds, isPhone]);
 
   return null;
 }

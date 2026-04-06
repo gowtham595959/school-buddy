@@ -16,6 +16,8 @@ html, body, #root {
 :root {
   --v2-left-panel-width: 413px;   /* matches current ExplorePage sidebar width */
   --v2-right-drawer-width: 480px; /* placeholder for upcoming right drawer */
+  /* Phone: room for bottom school cards + safe area (map padding / legend offset) */
+  --v2-mobile-deck-clearance: 240px;
 }
 
 .v2-shell {
@@ -110,6 +112,15 @@ html, body, #root {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+.v2-topbar-postcode-form {
+  display: contents;
+}
+
+/* “Go” only on small screens (see phone block); desktop keeps Enter key */
+.v2-postcode-go {
+  display: none;
+}
+
 /* avatar pinned to far right */
 .v2-avatar {
   margin-left: auto;
@@ -144,10 +155,13 @@ html, body, #root {
 
 /* ----- Phone (≤767px): full-bleed map; bottom swipeable school cards; sheet details ----- */
 @media (max-width: 767px) {
-  .v2-page--phone {
-    min-height: 100dvh;
-    height: 100dvh;
-    height: 100vh; /* fallback */
+  /* Height comes from inline style (100dvh) on Explore; keep fallbacks only if unset */
+  @supports not (height: 100dvh) {
+    .v2-page--phone {
+      min-height: 100vh;
+      height: 100vh;
+      max-height: 100vh;
+    }
   }
 
   .v2-page--phone .v2-topbar {
@@ -181,13 +195,40 @@ html, body, #root {
     gap: 8px;
   }
 
+  /* ≥16px prevents iOS zoom-on-focus and broken zoom/layout after submit */
   .v2-page--phone .v2-postcode {
     width: auto;
-    min-width: 100px;
-    max-width: min(200px, 42vw);
+    min-width: 0;
+    max-width: none;
     flex: 1 1 auto;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .v2-topbar-postcode-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .v2-postcode-go {
+    display: inline-block;
+    flex: 0 0 auto;
     padding: 10px 14px;
-    font-size: 13px;
+    border-radius: 12px;
+    border: 2px solid #2563eb;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .v2-postcode-go:active {
+    opacity: 0.92;
   }
 
   .v2-page--phone .v2-topbar-error {
@@ -332,21 +373,43 @@ html, body, #root {
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
   }
 
+  /* Header stays visible; only the body list scrolls */
   .v2-drawer-sidebar--phone .v2-right-drawer {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* scrollIntoView: offset “start” so accordion rows clear the sticky school title bar */
+  .v2-drawer-sidebar--phone .v2-drawer-header {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 6;
+    margin-bottom: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+  }
+
+  .v2-drawer-sidebar--phone .v2-drawer-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Manual scroll-into-view uses small margin; header is no longer in scroll path */
   .v2-drawer-sidebar--phone .v2-drawer-section {
-    scroll-margin-top: 96px;
+    scroll-margin-top: 12px;
   }
 
   /* Legend sits above the card deck */
   .v2-page--phone .v2-legend {
-    bottom: calc(230px + env(safe-area-inset-bottom, 0));
+    bottom: calc(var(--v2-mobile-deck-clearance) + env(safe-area-inset-bottom, 0));
   }
 }
 

@@ -4,7 +4,13 @@ import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import * as turf from "@turf/turf";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
+
+/** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). */
+const MIN_CATCHMENT_FIT_ZOOM = 11;
+/** Extra bottom padding (px, from bottom edge) on phone so fit isn’t hidden behind the card deck */
+const PHONE_FIT_BOUNDS_EXTRA_BOTTOM = 230;
 
 function radiusToMeters(radius, unit) {
   const r = Number(radius);
@@ -73,6 +79,7 @@ export function getBoundsFromPayload(payload) {
  */
 export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }) {
   const map = useMap();
+  const isPhone = useMediaQuery("(max-width: 767px)");
   const prevSelectedRef = useRef([]);
   const pendingPanRef = useRef(null);
 
@@ -118,11 +125,24 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
 
     pendingPanRef.current = null;
 
+    const bottomPad = isPhone ? 60 + PHONE_FIT_BOUNDS_EXTRA_BOTTOM : 60;
+
     map.fitBounds(bounds, {
-      padding: [60, 60],
+      paddingTopLeft: [60, 60],
+      paddingBottomRight: [60, bottomPad],
       animate: true,
+      maxZoom: 16,
     });
-  }, [selectedIds, catchmentsBySchoolId, map]);
+
+    const clampTooWide = () => {
+      const z = map.getZoom();
+      if (z < MIN_CATCHMENT_FIT_ZOOM) {
+        map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
+      }
+    };
+    const t = window.setTimeout(clampTooWide, 500);
+    return () => clearTimeout(t);
+  }, [selectedIds, catchmentsBySchoolId, map, isPhone]);
 
   return null;
 }

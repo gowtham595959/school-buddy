@@ -70,8 +70,11 @@ export default function SchoolListSection({
   /** Ref to the scrollable list container (mobile deck sync) */
   listRef = undefined,
 }) {
-  const safeItems = Array.isArray(items) ? items : [];
-  const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
+  const safeItems = useMemo(() => (Array.isArray(items) ? items : []), [items]);
+  const safeSelectedIds = useMemo(
+    () => (Array.isArray(selectedIds) ? selectedIds : []),
+    [selectedIds]
+  );
 
   const initial = useMemo(() => {
     if (typeof initialVisible === "number" && initialVisible > 0)

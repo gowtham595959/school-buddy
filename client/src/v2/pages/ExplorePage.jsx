@@ -27,12 +27,20 @@ import { useCatchmentCheck } from "../domains/catchmentCheck/useCatchmentCheck";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useSchoolListBuckets } from "../hooks/useSchoolListBuckets";
 
-// Static layout styles (avoid recreating on every render)
-const SHELL_STYLE = {
+// Desktop shell; phone uses dvh in render to avoid iOS URL-bar / keyboard layout blowups
+const SHELL_STYLE_DESKTOP = {
   height: "100vh",
   display: "flex",
   flexDirection: "column",
   minHeight: 0,
+};
+const SHELL_STYLE_PHONE = {
+  height: "100dvh",
+  minHeight: "100dvh",
+  maxHeight: "100dvh",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
 };
 const BODY_STYLE = { flex: 1, display: "flex", minHeight: 0 };
 const MAP_WRAP_STYLE = {
@@ -115,7 +123,7 @@ export default function ExplorePage() {
         transport.closeTransport();
       }
     },
-    [transport.transportSchool?.id, transport.closeTransport]
+    [transport]
   );
 
   const handleSchoolRowClick = useCallback(
@@ -126,7 +134,7 @@ export default function ExplorePage() {
         transport.closeTransport();
       }
     },
-    [transport.transportSchool?.id, transport.closeTransport]
+    [transport]
   );
 
   /**
@@ -153,14 +161,7 @@ export default function ExplorePage() {
       handleSchoolRowClick(s);
       void toggleSchool(id);
     },
-    [
-      schools,
-      selectedIds,
-      toggleSchool,
-      handleSchoolRowClick,
-      transport.transportSchool?.id,
-      transport.closeTransport,
-    ]
+    [schools, selectedIds, toggleSchool, handleSchoolRowClick, transport]
   );
 
   const handleCloseDrawer = useCallback(() => setDrawerSchool(null), []);
@@ -180,7 +181,10 @@ export default function ExplorePage() {
     drawerSchool ?? transport.transportSchool ?? mapAnchorSchool ?? null;
 
   return (
-    <div className={`v2-page${isPhoneLayout ? " v2-page--phone" : ""}`} style={SHELL_STYLE}>
+    <div
+      className={`v2-page${isPhoneLayout ? " v2-page--phone" : ""}`}
+      style={isPhoneLayout ? SHELL_STYLE_PHONE : SHELL_STYLE_DESKTOP}
+    >
       <TopBar
         postcode={postcode}
         defaultPostcode={DEFAULT_POSTCODE}
