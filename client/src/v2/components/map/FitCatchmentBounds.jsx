@@ -10,6 +10,17 @@ import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
 /** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). Desktop only. */
 const MIN_CATCHMENT_FIT_ZOOM = 11;
 
+/** Bottom inset for Leaflet fitBounds on phone — must clear bottom school cards (see --v2-mobile-deck-clearance). */
+function mobileFitBoundsBottomPaddingPx() {
+  if (typeof window === "undefined") return 280;
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--v2-mobile-deck-clearance")
+    .trim();
+  const n = parseFloat(raw);
+  const deck = Number.isFinite(n) ? n : 240;
+  return Math.round(deck + 32);
+}
+
 function radiusToMeters(radius, unit) {
   const r = Number(radius);
   if (!Number.isFinite(r) || r <= 0) return null;
@@ -123,16 +134,24 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
 
     pendingPanRef.current = null;
 
-    const fitOpts = {
-      paddingTopLeft: [60, 60],
-      paddingBottomRight: [60, 60],
-      animate: true,
-      maxZoom: 16,
-    };
+    const fitOpts = isPhone
+      ? {
+          /* Reserve space for top bar + bottom card deck so catchments stay in the visible map strip */
+          paddingTopLeft: [16, 68],
+          paddingBottomRight: [16, mobileFitBoundsBottomPaddingPx()],
+          animate: true,
+          maxZoom: 16,
+        }
+      : {
+          paddingTopLeft: [60, 60],
+          paddingBottomRight: [60, 60],
+          animate: true,
+          maxZoom: 16,
+        };
 
     map.fitBounds(bounds, fitOpts);
 
-    /* Mobile: single animated fitBounds only — no follow-up pan. */
+    /* Mobile: single animated fitBounds only — no zoom clamp (desktop only). */
     if (isPhone) {
       return undefined;
     }
