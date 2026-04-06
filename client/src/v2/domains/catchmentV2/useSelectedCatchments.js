@@ -40,5 +40,9 @@ export function useSelectedCatchments() {
     }
   }, []);
 
-  return { selectedIds, catchmentsBySchoolId, toggleSchool };
+  const clearAllCatchments = useCallback(() => {
+    setSelectedIds([]);
+  }, []);
+
+  return { selectedIds, catchmentsBySchoolId, toggleSchool, clearAllCatchments };
 }

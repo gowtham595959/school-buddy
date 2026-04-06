@@ -1,6 +1,12 @@
 // client/src/v2/components/drawer/SchoolDetailDrawer.jsx
 
-import React, { useMemo, useState, useRef, useCallback, useLayoutEffect } from "react";
+import React, {
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 import { useCatchmentForDrawer } from "../../domains/catchmentV2/useCatchmentForDrawer";
 import { useAdmissionsPolicies } from "../../domains/admissions/useAdmissionsPolicies";
 import { getOpenSeatsHeaderChipInfo } from "../../utils/catchmentOpenSeatsPreview";
@@ -192,8 +198,12 @@ function Section({
   preview,
   previewClassName,
   onHeaderClick,
+  /** Phone sheet: when a row expands, scroll it into view so bodies (e.g. tables) aren’t clipped */
+  scrollIntoViewOnExpand = false,
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
+  const rootRef = useRef(null);
+  const prevOpenRef = useRef(open);
 
   const handleHeaderClick = () => {
     setOpen((v) => {
@@ -203,8 +213,33 @@ function Section({
     });
   };
 
+  useLayoutEffect(() => {
+    if (!scrollIntoViewOnExpand) {
+      prevOpenRef.current = open;
+      return;
+    }
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (!open || wasOpen) return;
+
+    const el = rootRef.current;
+    if (!el) return;
+
+    const run = (behavior) => {
+      if (!el.isConnected) return;
+      el.scrollIntoView({ block: "start", behavior, inline: "nearest" });
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => run("smooth"));
+    });
+
+    const t = window.setTimeout(() => run("auto"), 280);
+    return () => clearTimeout(t);
+  }, [open, scrollIntoViewOnExpand]);
+
   return (
-    <div className="v2-drawer-section">
+    <div ref={rootRef} className="v2-drawer-section">
       <div className="v2-drawer-section-header">
         <div className="v2-drawer-section-header-left">
           <button
@@ -238,7 +273,26 @@ function Section({
   );
 }
 
-export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], onShowCatchment }) {
+export default function SchoolDetailDrawer({
+  school,
+  onClose,
+  selectedIds = [],
+  onShowCatchment,
+  /** Phone bottom sheet: scroll detail body to top when opening / switching school */
+  scrollToTopOnSchoolChange = false,
+}) {
+  const drawerScrollRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!scrollToTopOnSchoolChange || school?.id == null) return;
+    const el = drawerScrollRef.current;
+    if (!el) return;
+    const go = () => {
+      el.scrollTop = 0;
+    };
+    go();
+    requestAnimationFrame(go);
+  }, [scrollToTopOnSchoolChange, school?.id]);
   const enabled = useMemo(() => {
     const admissionsOk = isEnabledFlag(school, "has_admissions");
     const hasCatchment = isEnabledFlag(school, "has_catchment");
@@ -435,8 +489,12 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
     );
   }, [enabled.destinations, school]);
 
+  const sectionScrollProps = scrollToTopOnSchoolChange
+    ? { scrollIntoViewOnExpand: true }
+    : {};
+
   return (
-    <aside className="v2-right-drawer" aria-label="School details drawer">
+    <aside ref={drawerScrollRef} className="v2-right-drawer" aria-label="School details drawer">
       <div className="v2-drawer-header">
         <div className="v2-drawer-title-wrap">
           <div className="v2-drawer-title">
@@ -460,6 +518,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
       <div className="v2-drawer-scroll">
         {/* 1) School Details */}
         <Section
+          {...sectionScrollProps}
           title="School Details"
           icon={DRAWER_ICONS.details}
           preview={
@@ -566,6 +625,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         {/* 3) 11+ Catchment */}
         {enabled.catchment ? (
           <Section
+            {...sectionScrollProps}
             title="11+ Catchment"
             icon={DRAWER_ICONS.catchment}
             preview={
@@ -599,6 +659,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         {/* 4) 11+ Exam Details */}
         {enabled.exams ? (
           <Section
+            {...sectionScrollProps}
             title="11+ Exam Details"
             icon={DRAWER_ICONS.exam}
             preview={examHeaderPreview}
@@ -614,7 +675,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
 
         {/* 5) 11+ Allocation details */}
         {enabled.allocations ? (
-          <Section title="11+ Allocation details" icon={DRAWER_ICONS.allocation}>
+          <Section {...sectionScrollProps} title="11+ Allocation details" icon={DRAWER_ICONS.allocation}>
             <AllocationPanel
               policies={admissionsPolicies}
               allocationHistory={admissionsAllocationHistory}
@@ -626,14 +687,14 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
 
         {/* 6) GCSE results */}
         {enabled.gcse ? (
-          <Section title="GCSE results" icon={DRAWER_ICONS.results} preview={gcseHeaderPreview}>
+          <Section {...sectionScrollProps} title="GCSE results" icon={DRAWER_ICONS.results} preview={gcseHeaderPreview}>
             <GcseResultsPanel schoolId={school?.id} />
           </Section>
         ) : null}
 
         {/* 7) A level results */}
         {enabled.alevel ? (
-          <Section title="A level results" icon={DRAWER_ICONS.results} preview={alevelHeaderPreview}>
+          <Section {...sectionScrollProps} title="A level results" icon={DRAWER_ICONS.results} preview={alevelHeaderPreview}>
             <AlevelResultsPanel schoolId={school?.id} />
           </Section>
         ) : null}
@@ -641,6 +702,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         {/* 8) Post-18 destinations (DfE) — panel title kept for parents searching “Oxbridge” */}
         {enabled.destinations ? (
           <Section
+            {...sectionScrollProps}
             title="Oxbridge offers & Destinations"
             icon={DRAWER_ICONS.oxbridge}
             preview={destinationsHeaderPreview}
@@ -653,6 +715,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         {/* 9) Inspections */}
         {enabled.inspection ? (
           <Section
+            {...sectionScrollProps}
             title="Inspections"
             icon={DRAWER_ICONS.inspection}
             preview={inspectionHeaderPreview}
@@ -665,6 +728,7 @@ export default function SchoolDetailDrawer({ school, onClose, selectedIds = [], 
         {/* 10) Subjects (KS4 + post-16 entries) */}
         {enabled.subjects ? (
           <Section
+            {...sectionScrollProps}
             title="Subjects"
             icon={DRAWER_ICONS.subjects}
             preview={subjectsHeaderPreview}

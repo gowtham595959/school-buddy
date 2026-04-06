@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import TopBar from "../components/layout/TopBar";
 import LeftPanel from "../components/sidebar/LeftPanel";
+import MobileSchoolCardsDeck from "../components/mobile/MobileSchoolCardsDeck";
 import MapCanvas from "../components/map/MapCanvas";
 import SchoolMarkersV2Layer from "../components/map/SchoolMarkersV2Layer";
 import LegendControl from "../components/map/LegendControl";
@@ -23,6 +24,8 @@ import { useSchools } from "../domains/schools/useSchools";
 import { useSelectedCatchments } from "../domains/catchmentV2/useSelectedCatchments";
 import useTransportUI from "../domains/transport/useTransportUI";
 import { useCatchmentCheck } from "../domains/catchmentCheck/useCatchmentCheck";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useSchoolListBuckets } from "../hooks/useSchoolListBuckets";
 
 // Static layout styles (avoid recreating on every render)
 const SHELL_STYLE = {
@@ -40,9 +43,12 @@ const MAP_WRAP_STYLE = {
 };
 const SIDEBAR_STYLE = { minHeight: 0, overflow: "auto" };
 
+const PHONE_MAX_WIDTH = "(max-width: 767px)";
+
 export default function ExplorePage() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [drawerSchool, setDrawerSchool] = useState(null);
+  const isPhoneLayout = useMediaQuery(PHONE_MAX_WIDTH);
   /** Last school focused from list row or map pin (drawer/transport take precedence on map ring). */
   const [mapAnchorSchool, setMapAnchorSchool] = useState(null);
 
@@ -57,7 +63,7 @@ export default function ExplorePage() {
 
   const { schools, schoolsNear, openCatchment } = useSchools();
 
-  const { selectedIds, catchmentsBySchoolId, toggleSchool } =
+  const { selectedIds, catchmentsBySchoolId, toggleSchool, clearAllCatchments } =
     useSelectedCatchments();
 
   const transport = useTransportUI({ homePosition, postcode });
@@ -92,6 +98,14 @@ export default function ExplorePage() {
   useEffect(() => {
     setMapAnchorSchool(null);
   }, [homeLat, homeLon]);
+
+  const { topItems, middleItems, bottomItems } = useSchoolListBuckets({
+    inCatchmentSchools,
+    catchmentCheckBySchoolId,
+    allSchools: schools,
+    schoolsNear,
+    homeLocation: transport.homeLocation,
+  });
 
   const handleOpenSchoolDetails = useCallback(
     (s) => {
@@ -151,13 +165,22 @@ export default function ExplorePage() {
 
   const handleCloseDrawer = useCallback(() => setDrawerSchool(null), []);
 
+  useEffect(() => {
+    if (!isPhoneLayout || !drawerSchool) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setDrawerSchool(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isPhoneLayout, drawerSchool]);
+
   const handleToggleLegend = useCallback(() => setLegendOpen((prev) => !prev), []);
 
   const mapFocusSchool =
     drawerSchool ?? transport.transportSchool ?? mapAnchorSchool ?? null;
 
   return (
-    <div className="v2-page" style={SHELL_STYLE}>
+    <div className={`v2-page${isPhoneLayout ? " v2-page--phone" : ""}`} style={SHELL_STYLE}>
       <TopBar
         postcode={postcode}
         defaultPostcode={DEFAULT_POSTCODE}
@@ -168,40 +191,55 @@ export default function ExplorePage() {
         error={homeError}
       />
 
-      <div className="v2-body" style={BODY_STYLE}>
-        <div className="v2-sidebar" style={SIDEBAR_STYLE}>
-          <LeftPanel
-            inCatchmentSchools={inCatchmentSchools}
-            catchmentCheckBySchoolId={catchmentCheckBySchoolId}
-            catchmentLoading={catchmentLoading}
-            allSchools={schools}
-            schoolsNear={schoolsNear}
-            openCatchment={openCatchment}
-            selectedIds={selectedIds}
-            onToggleSchool={toggleSchool}
-            homeLocation={transport.homeLocation}
-            transportSchool={transport.transportSchool}
-            onOpenTransport={transport.toggleTransportForSchool}
-            onCloseTransport={transport.closeTransport}
-            onSelectRoute={transport.onSelectRoute}
-            onHoverRoute={transport.onHoverRoute}
-            onLeaveRoute={transport.onLeaveRoute}
-            onLeaveOptionsList={transport.onLeaveOptionsList}
-            onClearRoute={transport.onClearRoute}
-            onOpenSchoolDetails={handleOpenSchoolDetails}
-            onSchoolRowClick={handleSchoolRowClick}
-            drawerSchoolId={drawerSchool?.id}
-            focusedSchoolId={mapFocusSchool?.id ?? null}
+      <div className={`v2-body${isPhoneLayout ? " v2-body--phone" : ""}`} style={BODY_STYLE}>
+        {!isPhoneLayout ? (
+          <div className="v2-sidebar" style={SIDEBAR_STYLE}>
+            <LeftPanel
+              inCatchmentSchools={inCatchmentSchools}
+              catchmentCheckBySchoolId={catchmentCheckBySchoolId}
+              catchmentLoading={catchmentLoading}
+              allSchools={schools}
+              schoolsNear={schoolsNear}
+              openCatchment={openCatchment}
+              selectedIds={selectedIds}
+              onToggleSchool={toggleSchool}
+              onClearAllCatchments={clearAllCatchments}
+              homeLocation={transport.homeLocation}
+              transportSchool={transport.transportSchool}
+              onOpenTransport={transport.toggleTransportForSchool}
+              onCloseTransport={transport.closeTransport}
+              onSelectRoute={transport.onSelectRoute}
+              onHoverRoute={transport.onHoverRoute}
+              onLeaveRoute={transport.onLeaveRoute}
+              onLeaveOptionsList={transport.onLeaveOptionsList}
+              onClearRoute={transport.onClearRoute}
+              onOpenSchoolDetails={handleOpenSchoolDetails}
+              onSchoolRowClick={handleSchoolRowClick}
+              drawerSchoolId={drawerSchool?.id}
+              focusedSchoolId={mapFocusSchool?.id ?? null}
+            />
+          </div>
+        ) : null}
+
+        {isPhoneLayout && drawerSchool ? (
+          <button
+            type="button"
+            className="v2-mobile-drawer-backdrop"
+            aria-label="Close school details"
+            onClick={handleCloseDrawer}
           />
-        </div>
+        ) : null}
 
         {drawerSchool ? (
-          <div className="v2-drawer-sidebar">
+          <div
+            className={`v2-drawer-sidebar${isPhoneLayout ? " v2-drawer-sidebar--phone" : ""}`}
+          >
             <SchoolDetailDrawer
               school={drawerSchool}
               onClose={handleCloseDrawer}
               selectedIds={selectedIds}
               onShowCatchment={toggleSchool}
+              scrollToTopOnSchoolChange={isPhoneLayout}
             />
           </div>
         ) : null}
@@ -248,6 +286,33 @@ export default function ExplorePage() {
             />
           </MapCanvas>
         </div>
+
+        {isPhoneLayout ? (
+          <MobileSchoolCardsDeck
+            homeScrollKey={`${homeLat ?? ""},${homeLon ?? ""}`}
+            topItems={topItems}
+            middleItems={middleItems}
+            bottomItems={bottomItems}
+            selectedIds={selectedIds}
+            onToggleSchool={toggleSchool}
+            homeLocation={transport.homeLocation}
+            transportSchool={transport.transportSchool}
+            onOpenTransport={transport.toggleTransportForSchool}
+            onCloseTransport={transport.closeTransport}
+            onSelectRoute={transport.onSelectRoute}
+            onHoverRoute={transport.onHoverRoute}
+            onLeaveRoute={transport.onLeaveRoute}
+            onLeaveOptionsList={transport.onLeaveOptionsList}
+            onClearRoute={transport.onClearRoute}
+            onOpenSchoolDetails={handleOpenSchoolDetails}
+            onSchoolRowClick={handleSchoolRowClick}
+            drawerSchoolId={drawerSchool?.id}
+            focusedSchoolId={mapFocusSchool?.id ?? null}
+            catchmentCheckBySchoolId={catchmentCheckBySchoolId}
+            catchmentLoading={catchmentLoading}
+            onClearAllCatchments={clearAllCatchments}
+          />
+        ) : null}
       </div>
     </div>
   );

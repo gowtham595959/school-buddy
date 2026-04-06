@@ -40,6 +40,7 @@ export default function TransportButton({
   optionIndex,
   onMouseEnter,
   onMouseLeave,
+  compact = false,
 }) {
   if (!route) return null;
 
@@ -54,6 +55,11 @@ export default function TransportButton({
 
   const DOUBLE_SPACE = "\u00A0\u00A0";
 
+  const pad = compact ? "5px 6px" : "8px 10px";
+  const marginTop = compact ? 5 : 8;
+  const emojiCol = compact ? 16 : 18;
+  const fontWeightSection = compact ? 550 : 600;
+
   return (
     <div
       onClick={onClick}
@@ -67,30 +73,31 @@ export default function TransportButton({
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "8px 10px",
+        padding: pad,
         borderRadius: 8,
         border: "1px solid #e5e5e5",
-        marginTop: 8,
+        marginTop,
         cursor: "pointer",
         background: isActive ? "#eef5ff" : "#fff",
         whiteSpace: "nowrap",
+        fontSize: compact ? 12 : 14,
       }}
     >
       {/* LEFT SIDE: emoji + mode */}
-      <span style={{ width: 18, textAlign: "center" }}>
+      <span style={{ width: emojiCol, textAlign: "center", fontSize: compact ? 13 : undefined }}>
         {modeEmoji(route.mode)}
       </span>
 
       {DOUBLE_SPACE}
 
-      <span style={{ fontWeight: 600 }}>
+      <span style={{ fontWeight: fontWeightSection }}>
         {modeText}
       </span>
 
       {DOUBLE_SPACE}
 
       {/* Colon */}
-      <span style={{ fontWeight: 600 }}>
+      <span style={{ fontWeight: fontWeightSection }}>
         :
       </span>
 
