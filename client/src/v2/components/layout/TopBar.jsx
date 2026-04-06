@@ -9,6 +9,9 @@ export default function TopBar({
   onPostcodeSubmit,
   onSubmitPostcode,
   error,
+  /** Phone layout: toggles slide-over school list */
+  onToggleSchoolList,
+  schoolListOpen = false,
 }) {
   const handleChange = onPostcodeChange ?? onChangePostcode ?? (() => {});
   const handleSubmit = onPostcodeSubmit ?? onSubmitPostcode ?? (() => {});
@@ -54,11 +57,24 @@ export default function TopBar({
         />
 
         {error ? (
-          <div style={{ color: "#b91c1c", fontSize: 12, marginLeft: 8 }}>
+          <div className="v2-topbar-error" style={{ color: "#b91c1c", fontSize: 12, marginLeft: 8 }}>
             {error}
           </div>
         ) : null}
       </div>
+
+      {onToggleSchoolList ? (
+        <button
+          type="button"
+          className={`v2-topbar-schools-btn${schoolListOpen ? " v2-topbar-schools-btn--open" : ""}`}
+          onClick={() => onToggleSchoolList()}
+          aria-expanded={schoolListOpen}
+          aria-controls="v2-school-list-panel"
+          id="v2-topbar-schools-trigger"
+        >
+          Schools
+        </button>
+      ) : null}
 
       <div className="v2-avatar">🙂</div>
     </div>

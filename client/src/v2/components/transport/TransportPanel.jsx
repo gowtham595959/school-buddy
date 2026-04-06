@@ -1,6 +1,13 @@
 // client/src/v2/components/transport/TransportPanel.jsx
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import TransportButton from "./TransportButton";
 import { fetchTransportRoute } from "../../domains/transport/transport.api";
 
@@ -18,6 +25,30 @@ const MODE_TITLES = {
   bicycling: "Cycling",
 };
 
+function sortRouteOptions(list) {
+  const arr = Array.isArray(list) ? [...list] : [];
+  arr.sort((a, b) => {
+    const da = Number(a?.duration_minutes);
+    const db = Number(b?.duration_minutes);
+    const aBad = !Number.isFinite(da);
+    const bBad = !Number.isFinite(db);
+    if (aBad && bBad) return 0;
+    if (aBad) return 1;
+    if (bBad) return -1;
+    if (da !== db) return da - db;
+    const xa = Number(a?.distance_km);
+    const xb = Number(b?.distance_km);
+    const xaBad = !Number.isFinite(xa);
+    const xbBad = !Number.isFinite(xb);
+    if (xaBad && xbBad) return 0;
+    if (xaBad) return 1;
+    if (xbBad) return -1;
+    if (xa !== xb) return xa - xb;
+    return (a?.optionIndex ?? 0) - (b?.optionIndex ?? 0);
+  });
+  return arr;
+}
+
 export default function TransportPanel({
   school,
   homeLocation,
@@ -33,6 +64,9 @@ export default function TransportPanel({
 
   // ✅ NEW (additive): explicit clear (removes route from map)
   onClearRoute,
+
+  /** Phone bottom-card: short title, smaller controls */
+  compactMobile = false,
 }) {
   const [loading, setLoading] = useState(false);
   const [transportData, setTransportData] = useState(null);
@@ -41,6 +75,7 @@ export default function TransportPanel({
 
   // ✅ active mode tab
   const [selectedMode, setSelectedMode] = useState(null);
+  const autoDefaultDoneForPayloadRef = useRef(null);
 
   const titleFrom = homeLocation?.postcode || "Home";
   const titleTo = school?.name || "";
@@ -56,6 +91,7 @@ export default function TransportPanel({
   useEffect(() => {
     if (!payload) return;
 
+    autoDefaultDoneForPayloadRef.current = null;
     setLoading(true);
     setError(null);
     setTransportData(null);
@@ -112,44 +148,68 @@ export default function TransportPanel({
   // ✅ sort options shortest → longest (stable, minimal)
   const sortedActiveOptions = useMemo(() => {
     const activeOptions = groupedRoutes[activeMode] || [];
-    const list = Array.isArray(activeOptions) ? [...activeOptions] : [];
-    list.sort((a, b) => {
-      const da = Number(a?.duration_minutes);
-      const db = Number(b?.duration_minutes);
-
-      const aBad = !Number.isFinite(da);
-      const bBad = !Number.isFinite(db);
-      if (aBad && bBad) return 0;
-      if (aBad) return 1;
-      if (bBad) return -1;
-
-      if (da !== db) return da - db;
-
-      const xa = Number(a?.distance_km);
-      const xb = Number(b?.distance_km);
-      const xaBad = !Number.isFinite(xa);
-      const xbBad = !Number.isFinite(xb);
-      if (xaBad && xbBad) return 0;
-      if (xaBad) return 1;
-      if (xbBad) return -1;
-      if (xa !== xb) return xa - xb;
-
-      return (a?.optionIndex ?? 0) - (b?.optionIndex ?? 0);
-    });
-    return list;
+    return sortRouteOptions(activeOptions);
   }, [groupedRoutes, activeMode]);
+
+  const selectModeAndFirstOption = useCallback(
+    (mode) => {
+      setSelectedMode(mode);
+      const sorted = sortRouteOptions(groupedRoutes[mode] || []);
+      const first = sorted[0];
+      if (first) {
+        setSelectedKey(`${mode}:0`);
+        onSelectRoute?.(first);
+      } else {
+        setSelectedKey(null);
+        onClearRoute?.();
+        onLeaveOptionsList?.();
+      }
+    },
+    [groupedRoutes, onSelectRoute, onClearRoute, onLeaveOptionsList]
+  );
+
+  // After routes load: prefer transit tab + first (fastest) option on map — desktop + mobile.
+  useLayoutEffect(() => {
+    if (loading || error || !payload || !transportData) return;
+    const modes = Object.keys(groupedRoutes);
+    if (modes.length === 0) return;
+
+    const sig = `${payload.home_lat}|${payload.home_lon}|${payload.school_id}`;
+    if (autoDefaultDoneForPayloadRef.current === sig) return;
+
+    const pickMode =
+      groupedRoutes.transit?.length > 0 ? "transit" : modes[0];
+    selectModeAndFirstOption(pickMode);
+
+    autoDefaultDoneForPayloadRef.current = sig;
+  }, [
+    loading,
+    error,
+    payload,
+    transportData,
+    groupedRoutes,
+    selectModeAndFirstOption,
+  ]);
+
+  const headerTitle = compactMobile
+    ? "Home to school"
+    : `${titleFrom} to ${titleTo}`;
+
+  const shellPad = compactMobile ? 8 : 12;
+  const shellMarginTop = compactMobile ? 6 : 12;
 
   return (
     <div
+      className={compactMobile ? "v2-transport-panel v2-transport-panel--compact-mobile" : undefined}
       style={{
-        marginTop: 12,
-        padding: 12,
+        marginTop: shellMarginTop,
+        padding: shellPad,
         border: "1px solid #ddd",
         borderRadius: 10,
         background: "#fafafa",
         display: "flex",
         flexDirection: "column",
-        maxHeight: "65vh",
+        maxHeight: compactMobile ? "min(50vh, 320px)" : "65vh",
       }}
     >
       {/* Header */}
@@ -157,19 +217,32 @@ export default function TransportPanel({
         style={{
           display: "flex",
           justifyContent: "space-between",
-          marginBottom: 6,
+          marginBottom: compactMobile ? 4 : 6,
+          gap: 8,
+          alignItems: "flex-start",
         }}
       >
-        <div>
-          <div style={{ fontWeight: 700 }}>
-            {titleFrom} to {titleTo}
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              fontWeight: compactMobile ? 600 : 700,
+              fontSize: compactMobile ? 12 : undefined,
+            }}
+          >
+            {headerTitle}
           </div>
-          <div style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>
-            (Monday 7:00 AM)
-          </div>
+          {!compactMobile ? (
+            <div style={{ fontSize: 12, color: "#666", fontStyle: "italic" }}>
+              (Monday 7:00 AM)
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
+              Monday 7:00 AM
+            </div>
+          )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: compactMobile ? 6 : 8, flexShrink: 0 }}>
           <button
             onClick={() => {
               setSelectedKey(null);
@@ -182,7 +255,7 @@ export default function TransportPanel({
               border: "none",
               background: "transparent",
               color: "#666",
-              fontSize: 12,
+              fontSize: compactMobile ? 11 : 12,
               textDecoration: "underline",
               padding: 0,
             }}
@@ -197,7 +270,7 @@ export default function TransportPanel({
               onLeaveOptionsList?.();
               onClose?.();
             }}
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", fontSize: compactMobile ? 16 : undefined }}
             title="Close transport and clear route from map"
           >
             ✕
@@ -210,26 +283,29 @@ export default function TransportPanel({
         <div
           style={{
             display: "flex",
-            gap: 6,
-            marginBottom: 8,
+            gap: compactMobile ? 4 : 6,
+            marginBottom: compactMobile ? 6 : 8,
           }}
         >
           {availableModes.map((mode) => (
             <button
               key={mode}
-              onClick={() => setSelectedMode(mode)}
+              onClick={() => selectModeAndFirstOption(mode)}
               title={MODE_TITLES[mode] || mode}
               style={{
                 flex: 1,
-                padding: "6px 0",
+                padding: compactMobile ? "4px 0" : "6px 0",
                 borderRadius: 6,
                 border:
                   activeMode === mode
-                    ? "2px solid #1a73e8"
+                    ? compactMobile
+                      ? "1.5px solid #1a73e8"
+                      : "2px solid #1a73e8"
                     : "1px solid #ccc",
                 background: activeMode === mode ? "#e8f0fe" : "#fff",
                 cursor: "pointer",
-                fontSize: 16,
+                fontSize: compactMobile ? 13 : 16,
+                lineHeight: 1.1,
               }}
             >
               {MODE_LABELS[mode] || mode}
@@ -277,6 +353,7 @@ export default function TransportPanel({
                 key={key}
                 route={opt}
                 optionIndex={sortedIndex}
+                compact={compactMobile}
                 isActive={selectedKey === key}
                 onClick={() => {
                   setSelectedKey(key);

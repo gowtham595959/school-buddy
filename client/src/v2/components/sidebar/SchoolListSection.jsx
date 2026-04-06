@@ -27,6 +27,8 @@ export default function SchoolListSection({
   items,
   selectedIds,
   onToggle,
+  /** Clears every catchment selection (all section headers). */
+  onClearAllCatchments,
 
   // transport props
   homeLocation,
@@ -59,6 +61,14 @@ export default function SchoolListSection({
 
   /** Left panel: visual group — green | blue | yellow */
   sectionAccent,
+
+  showViewAllButton = true,
+
+  /** Tighter header for mobile bottom cards */
+  compactMobileCard = false,
+
+  /** Ref to the scrollable list container (mobile deck sync) */
+  listRef = undefined,
 }) {
   const safeItems = Array.isArray(items) ? items : [];
   const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
@@ -89,6 +99,7 @@ export default function SchoolListSection({
   const sectionClass = [
     "v2-section",
     sectionAccent ? `v2-section--accent-${sectionAccent}` : "",
+    compactMobileCard ? "v2-section--mobile-card" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -97,10 +108,20 @@ export default function SchoolListSection({
     <div className={sectionClass}>
       <div className="v2-section-header">
         <div className="v2-section-title">{title}</div>
-        <button className="v2-link-btn">View all</button>
+        {showViewAllButton ? (
+          <button
+            type="button"
+            className="v2-link-btn"
+            disabled={!safeSelectedIds.length}
+            onClick={() => onClearAllCatchments?.()}
+          >
+            Clear all
+          </button>
+        ) : null}
       </div>
 
       <div
+        ref={listRef}
         className="v2-section-list"
         style={
           typeof scrollHeight === "number" && scrollHeight > 0
@@ -128,21 +149,23 @@ export default function SchoolListSection({
 
             return (
               <React.Fragment key={s.id}>
-                <SchoolRow
-                  school={s}
-                  checked={safeSelectedIds.includes(s.id)}
-                  onToggle={onToggle}
-                  onOpenTransport={onOpenTransport}
-                  hoverTitle={hoverTitle}
-                  onOpenDetails={onOpenDetails}
-                  onRowClick={onRowClick}
-                  isDrawerOpen={drawerSchoolId != null && drawerSchoolId === s.id}
-                  isTransportOpen={!!transportSchool && transportSchool.id === s.id}
-                  isCatchmentSelected={safeSelectedIds.includes(s.id)}
-                  isMapFocused={
-                    focusedSchoolId != null && focusedSchoolId === s.id
-                  }
-                />
+                <div data-school-row-id={s.id}>
+                  <SchoolRow
+                    school={s}
+                    checked={safeSelectedIds.includes(s.id)}
+                    onToggle={onToggle}
+                    onOpenTransport={onOpenTransport}
+                    hoverTitle={hoverTitle}
+                    onOpenDetails={onOpenDetails}
+                    onRowClick={onRowClick}
+                    isDrawerOpen={drawerSchoolId != null && drawerSchoolId === s.id}
+                    isTransportOpen={!!transportSchool && transportSchool.id === s.id}
+                    isCatchmentSelected={safeSelectedIds.includes(s.id)}
+                    isMapFocused={
+                      focusedSchoolId != null && focusedSchoolId === s.id
+                    }
+                  />
+                </div>
 
                 {isOpen ? (
                   <div className="v2-transport-inline">
@@ -155,6 +178,7 @@ export default function SchoolListSection({
                       onLeaveRoute={onLeaveRoute}
                       onLeaveOptionsList={onLeaveOptionsList}
                       onClearRoute={onClearRoute}
+                      compactMobile={!!compactMobileCard}
                     />
                   </div>
                 ) : null}

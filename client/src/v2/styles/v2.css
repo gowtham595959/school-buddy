@@ -142,6 +142,220 @@ html, body, #root {
   min-height: 0;
 }
 
+/* ----- Phone (≤767px): full-bleed map; bottom swipeable school cards; sheet details ----- */
+@media (max-width: 767px) {
+  .v2-page--phone {
+    min-height: 100dvh;
+    height: 100dvh;
+    height: 100vh; /* fallback */
+  }
+
+  .v2-page--phone .v2-topbar {
+    min-height: 56px;
+    height: auto;
+    padding: 8px 10px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .v2-page--phone .v2-brand {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  .v2-page--phone .v2-appname {
+    font-size: clamp(16px, 4.5vw, 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .v2-page--phone .v2-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .v2-page--phone .v2-topbar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .v2-page--phone .v2-postcode {
+    width: auto;
+    min-width: 100px;
+    max-width: min(200px, 42vw);
+    flex: 1 1 auto;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .v2-page--phone .v2-topbar-error {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: 4px !important;
+    font-size: 10px !important;
+  }
+
+  .v2-body--phone {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .v2-body--phone .v2-map-wrap {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    min-height: 0;
+  }
+
+  /* Bottom card deck (swipe between the three lists) */
+  .v2-mobile-cards-deck {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1180;
+    pointer-events: none;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .v2-mobile-cards-deck * {
+    pointer-events: auto;
+  }
+
+  .v2-mobile-cards-rail {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    padding: 10px 12px 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .v2-mobile-cards-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .v2-mobile-card--snap {
+    flex: 0 0 calc(100vw - 44px);
+    max-width: 420px;
+    scroll-snap-align: center;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.16);
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .v2-section--mobile-card {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .v2-section--mobile-card .v2-section-header {
+    padding: 10px 12px 8px;
+    margin: 0;
+  }
+
+  .v2-section--mobile-card .v2-section-title {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .v2-section--mobile-card .v2-section-title-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    vertical-align: baseline;
+  }
+
+  .v2-section--mobile-card .v2-section-header .v2-link-btn {
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 72px;
+    line-height: 1.2;
+    text-align: right;
+  }
+
+  .v2-section--mobile-card .v2-section-list {
+    margin: 0;
+    padding: 0 6px 10px;
+    /* list max-height set inline (~2 rows); subtle hint that content continues */
+    background: linear-gradient(#fafafa 0%, #fff 100%);
+    background-attachment: local;
+  }
+
+  .v2-mobile-drawer-backdrop {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1275;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.4);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* School details: bottom sheet (scrollable), map stays visible above */
+  .v2-drawer-sidebar--phone {
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    min-height: min(52vh, 420px) !important;
+    max-height: min(88vh, 900px) !important;
+    height: auto !important;
+    align-self: stretch !important;
+    z-index: 1280;
+    border-left: none !important;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+  }
+
+  .v2-drawer-sidebar--phone .v2-right-drawer {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* scrollIntoView: offset “start” so accordion rows clear the sticky school title bar */
+  .v2-drawer-sidebar--phone .v2-drawer-section {
+    scroll-margin-top: 96px;
+  }
+
+  /* Legend sits above the card deck */
+  .v2-page--phone .v2-legend {
+    bottom: calc(230px + env(safe-area-inset-bottom, 0));
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .v2-mobile-card--snap {
+    scroll-snap-align: none;
+  }
+}
+
 /* ✅ Left panel (the actual scroll container) */
 .v2-left-panel {
   width: var(--v2-left-panel-width);
@@ -314,6 +528,11 @@ html, body, #root {
   background: transparent;
   cursor: pointer;
   color: #666;
+}
+
+.v2-link-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .v2-section-list {
