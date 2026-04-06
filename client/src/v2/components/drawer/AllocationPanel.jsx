@@ -161,8 +161,11 @@ function AllocationProfileHistory({ rows }) {
  * 11+ allocation: cohort year toggles + allocation snapshot (from admissions_policies).
  */
 export default function AllocationPanel({ policies, allocationHistory, loading, error }) {
-  const list = Array.isArray(policies) ? policies : [];
-  const historyList = Array.isArray(allocationHistory) ? allocationHistory : [];
+  const list = useMemo(() => (Array.isArray(policies) ? policies : []), [policies]);
+  const historyList = useMemo(
+    () => (Array.isArray(allocationHistory) ? allocationHistory : []),
+    [allocationHistory]
+  );
 
   const years = useMemo(() => {
     const ys = list.map((p) => p.entry_year).filter((y) => y != null);

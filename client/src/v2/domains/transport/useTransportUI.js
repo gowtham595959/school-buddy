@@ -24,6 +24,7 @@ export default function useTransportUI({ homePosition, postcode }) {
   // ✅ CHANGE: hover -> sticky preview -> selected
   // clearVersion forces re-run when we clear (ref doesn't trigger re-render)
   const activeRoute = useMemo(() => {
+    void clearVersion; // bump via setClearVersion forces recomputation when ref-only preview clears
     return hoverRoute || stickyPreviewRouteRef.current || selectedRoute || null;
   }, [hoverRoute, selectedRoute, clearVersion]);
 
@@ -104,22 +105,38 @@ export default function useTransportUI({ homePosition, postcode }) {
     }
   }, [homeLocation, postcode, homePosition]);
 
-  return {
-    transportSchool,
-    homeLocation,
-    selectedRoute,
-    hoverRoute,
-    activeRoute,
+  return useMemo(
+    () => ({
+      transportSchool,
+      homeLocation,
+      selectedRoute,
+      hoverRoute,
+      activeRoute,
 
-    openTransportForSchool,
-    toggleTransportForSchool,
-    closeTransport,
-    onSelectRoute,
-    onHoverRoute,
-    onLeaveRoute,
+      openTransportForSchool,
+      toggleTransportForSchool,
+      closeTransport,
+      onSelectRoute,
+      onHoverRoute,
+      onLeaveRoute,
 
-    // ✅ new (additive)
-    onLeaveOptionsList,
-    onClearRoute,
-  };
+      onLeaveOptionsList,
+      onClearRoute,
+    }),
+    [
+      transportSchool,
+      homeLocation,
+      selectedRoute,
+      hoverRoute,
+      activeRoute,
+      openTransportForSchool,
+      toggleTransportForSchool,
+      closeTransport,
+      onSelectRoute,
+      onHoverRoute,
+      onLeaveRoute,
+      onLeaveOptionsList,
+      onClearRoute,
+    ]
+  );
 }

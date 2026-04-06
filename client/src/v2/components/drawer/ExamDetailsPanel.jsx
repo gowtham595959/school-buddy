@@ -61,7 +61,7 @@ function SubjectsRowValue({ entries }) {
  * 11+ exam section: year toggles + blocks gated by admissions_policies.show_* flags.
  */
 export default function ExamDetailsPanel({ policies, loading, error }) {
-  const list = Array.isArray(policies) ? policies : [];
+  const list = useMemo(() => (Array.isArray(policies) ? policies : []), [policies]);
 
   const years = useMemo(() => {
     const ys = list.map((p) => p.entry_year).filter((y) => y != null);

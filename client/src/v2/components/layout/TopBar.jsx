@@ -33,28 +33,39 @@ export default function TopBar({
           <div className="v2-appname">{BRANDING.appName}</div>
         </div>
 
-        <input
-          className={`v2-postcode ${isDefault ? "v2-postcode--default" : ""}`}
-          value={postcode}
-          placeholder="e.g. SM5 4NZ"
-          onChange={(e) => handleChange?.(e.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSubmit?.(postcode);
-            }
+        <form
+          className="v2-topbar-postcode-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit?.(postcode);
           }}
-          // ✅ Add home icon without changing layout/CSS build behavior
-          style={{
-            backgroundImage: 'url("/icons/home_Board_opaque.png")',
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "14px center",
-            backgroundSize: "16px 16px",
-            paddingLeft: 40, // room for the icon (keeps your existing padding feel)
-          }}
-        />
+        >
+          <input
+            className={`v2-postcode ${isDefault ? "v2-postcode--default" : ""}`}
+            value={postcode}
+            placeholder="e.g. SM5 4NZ"
+            enterKeyHint="go"
+            onChange={(e) => handleChange?.(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit?.(postcode);
+              }
+            }}
+            style={{
+              backgroundImage: 'url("/icons/home_Board_opaque.png")',
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "14px center",
+              backgroundSize: "16px 16px",
+              paddingLeft: 40,
+            }}
+          />
+          <button type="submit" className="v2-postcode-go" aria-label="Apply postcode">
+            Go
+          </button>
+        </form>
 
         {error ? (
           <div className="v2-topbar-error" style={{ color: "#b91c1c", fontSize: 12, marginLeft: 8 }}>
