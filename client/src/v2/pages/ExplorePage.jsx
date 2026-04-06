@@ -8,6 +8,7 @@ import MobileSchoolCardsDeck from "../components/mobile/MobileSchoolCardsDeck";
 import MapCanvas from "../components/map/MapCanvas";
 import SchoolMarkersV2Layer from "../components/map/SchoolMarkersV2Layer";
 import LegendControl from "../components/map/LegendControl";
+import MapZoomIndicator from "../components/map/MapZoomIndicator";
 import SelectedCatchmentsLayers from "../components/map/SelectedCatchmentsLayers";
 import FitCatchmentBounds from "../components/map/FitCatchmentBounds";
 import SchoolDetailDrawer from "../components/drawer/SchoolDetailDrawer";
@@ -288,6 +289,8 @@ export default function ExplorePage() {
               open={legendOpen}
               onToggle={handleToggleLegend}
             />
+
+            <MapZoomIndicator />
           </MapCanvas>
         </div>
 
