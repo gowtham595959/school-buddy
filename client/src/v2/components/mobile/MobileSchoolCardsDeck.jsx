@@ -67,10 +67,18 @@ export default function MobileSchoolCardsDeck({
   const railRef = useRef(null);
   const cardRefs = [useRef(null), useRef(null), useRef(null)];
   const listRefs = [useRef(null), useRef(null), useRef(null)];
+  const prevHomeScrollKeyRef = useRef(null);
+  /** After home moves, stay on “Schools in Catchment” (rail start); skip one focus-driven rail/list snap */
+  const skipFocusAlignForHomeChangeRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const rail = railRef.current;
     if (!rail) return;
+    const homeChanged = prevHomeScrollKeyRef.current !== homeScrollKey;
+    prevHomeScrollKeyRef.current = homeScrollKey;
+    if (!homeChanged) return;
+
+    skipFocusAlignForHomeChangeRef.current = true;
     rail.scrollLeft = 0;
     listRefs.forEach((r) => {
       if (r.current) r.current.scrollTop = 0;
@@ -86,6 +94,11 @@ export default function MobileSchoolCardsDeck({
       bottomItems
     );
     if (idx == null) return;
+
+    if (skipFocusAlignForHomeChangeRef.current) {
+      skipFocusAlignForHomeChangeRef.current = false;
+      return;
+    }
 
     const rail = railRef.current;
     const card = cardRefs[idx].current;

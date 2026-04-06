@@ -2,7 +2,7 @@ import React from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-export default function MapCanvas({ center = [51.37, -0.22], zoom = 11, children }) {
+export default function MapCanvas({ center = [51.37, -0.22], zoom = 12, children }) {
   return (
     <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }}>
 <TileLayer

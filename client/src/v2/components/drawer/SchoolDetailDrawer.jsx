@@ -200,7 +200,7 @@ function scrollBlockIntoParent(container, blockEl, marginTopPx = 8) {
   container.scrollTop = Math.max(0, Math.min(nextTop, maxScroll));
 }
 
-/** Desktop: `.v2-drawer-sidebar` scrolls; phone: `.v2-drawer-scroll` inside the sheet scrolls (inner has overflow visible on desktop). */
+/** Desktop: outer `.v2-drawer-sidebar` may clip; phone: `.v2-drawer-scroll` scrolls inside the sheet. */
 function resolveDrawerScrollContainer(sectionEl, preferredRef) {
   const preferred = preferredRef?.current;
   const overflowYScrolls = (el) => {
@@ -257,7 +257,12 @@ function Section({
       const sec = rootRef.current;
       if (!sec?.isConnected) return;
       const c = resolveDrawerScrollContainer(sec, scrollParentRef);
-      if (c) scrollBlockIntoParent(c, sec, 8);
+      const sidebar = sec.closest(".v2-drawer-sidebar");
+      const desktopDrawer =
+        Boolean(sidebar && !sidebar.classList.contains("v2-drawer-sidebar--phone"));
+      /* Desktop: tighter top alignment + header spacing so the band under the school title doesn’t read as a double rule */
+      const topMargin = desktopDrawer ? 0 : 4;
+      if (c) scrollBlockIntoParent(c, sec, topMargin);
       else sec.scrollIntoView({ block: "start", behavior: "auto", inline: "nearest" });
     };
 
@@ -343,7 +348,17 @@ export default function SchoolDetailDrawer({
     const inner = drawerScrollRef.current;
     const sidebar = inner?.closest?.(".v2-drawer-sidebar");
     const go = () => {
-      if (scrollToTopOnSchoolChange && inner) inner.scrollTop = 0;
+      if (inner) {
+        const ioy = window.getComputedStyle(inner).overflowY;
+        if (
+          scrollToTopOnSchoolChange ||
+          ioy === "auto" ||
+          ioy === "scroll" ||
+          ioy === "overlay"
+        ) {
+          inner.scrollTop = 0;
+        }
+      }
       if (sidebar && sidebar !== inner) {
         const oy = window.getComputedStyle(sidebar).overflowY;
         if (oy === "auto" || oy === "scroll" || oy === "overlay") sidebar.scrollTop = 0;
