@@ -116,6 +116,11 @@ html, body, #root {
   display: contents;
 }
 
+/* Wrapper for input + optional Go; display:contents on desktop so input stays a direct flex child of .v2-topbar-left */
+.v2-postcode-field {
+  display: contents;
+}
+
 /* “Go” only on small screens (see phone block); desktop keeps Enter key */
 .v2-postcode-go {
   display: none;
@@ -173,15 +178,16 @@ html, body, #root {
     align-items: center;
   }
 
+  /* Let the name keep its natural width first; postcode field is capped so “Apemind” isn’t squeezed */
   .v2-page--phone .v2-brand {
-    min-width: 0;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
   }
 
   .v2-page--phone .v2-appname {
     font-size: clamp(16px, 4.5vw, 20px);
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .v2-page--phone .v2-logo {
@@ -195,40 +201,57 @@ html, body, #root {
     gap: 8px;
   }
 
-  /* ≥16px prevents iOS zoom-on-focus and broken zoom/layout after submit */
-  .v2-page--phone .v2-postcode {
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    flex: 1 1 auto;
-    padding: 10px 12px;
-    font-size: 16px;
-  }
-
+  /* ≥16px prevents iOS zoom-on-focus; extra right padding for inset Go */
   .v2-topbar-postcode-form {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 1 1 auto;
+    gap: 0;
+    /* Do not flex-grow — otherwise max-width is ignored and the bar eats the whole row */
+    flex: 0 1 56%;
+    min-width: 0;
+    max-width: 56%;
+    margin-inline-start: 10px;
+  }
+
+  .v2-postcode-field {
+    display: block;
+    position: relative;
+    flex: 1;
     min-width: 0;
   }
 
-  .v2-postcode-go {
-    display: inline-block;
-    flex: 0 0 auto;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 2px solid #2563eb;
-    background: #2563eb;
-    color: #fff;
-    font-weight: 700;
-    font-size: 14px;
+  .v2-page--phone .v2-postcode {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 10px 52px 10px 12px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .v2-page--phone .v2-postcode-go {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    margin: 0;
+    border: none;
+    border-radius: 8px;
+    background: rgba(37, 99, 235, 0.09);
+    color: #2563eb;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.2;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .v2-postcode-go:active {
-    opacity: 0.92;
+  .v2-page--phone .v2-postcode-go:active {
+    background: rgba(37, 99, 235, 0.18);
   }
 
   .v2-page--phone .v2-topbar-error {
@@ -388,10 +411,11 @@ html, body, #root {
     position: relative;
     z-index: 6;
     margin-bottom: 0;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #eee;
     background: #fafafa;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+    /* Single hairline: border-bottom only (box-shadow read as a second line next to the border) */
+    box-shadow: none;
   }
 
   .v2-drawer-sidebar--phone .v2-drawer-scroll {
@@ -400,11 +424,14 @@ html, body, #root {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    /* Pull up slightly so header border + scroll top don’t read as a double hairline + gap (esp. iOS) */
+    margin-top: -2px;
+    padding-top: 2px;
   }
 
   /* Manual scroll-into-view uses small margin; header is no longer in scroll path */
   .v2-drawer-sidebar--phone .v2-drawer-section {
-    scroll-margin-top: 12px;
+    scroll-margin-top: 9px;
   }
 
   /* Legend sits above the card deck */
@@ -720,6 +747,40 @@ html, body, #root {
   flex-direction: column;
   border-left: 1px solid #eee;
   background: #fafafa;
+}
+
+/* Desktop only: match the phone sheet model — toolbar header stays put; panels scroll inside */
+@media (min-width: 768px) {
+  .v2-drawer-sidebar:not(.v2-drawer-sidebar--phone) {
+    align-self: stretch;
+    overflow-y: hidden;
+    min-height: 0;
+  }
+
+  .v2-drawer-sidebar:not(.v2-drawer-sidebar--phone) .v2-right-drawer {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .v2-drawer-sidebar:not(.v2-drawer-sidebar--phone) .v2-drawer-header {
+    flex-shrink: 0;
+    margin-bottom: 4px;
+  }
+
+  .v2-drawer-sidebar:not(.v2-drawer-sidebar--phone) .v2-drawer-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .v2-drawer-sidebar:not(.v2-drawer-sidebar--phone) .v2-drawer-section {
+    scroll-margin-top: 12px;
+  }
 }
 
 .v2-right-drawer {

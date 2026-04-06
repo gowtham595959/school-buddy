@@ -249,7 +249,7 @@ export default function ExplorePage() {
         ) : null}
 
         <div className="v2-map-wrap" style={MAP_WRAP_STYLE}>
-          <MapCanvas center={homePosition} zoom={11}>
+          <MapCanvas center={homePosition} zoom={12}>
             <PanToHomeV2 position={homePosition} />
 
             <HomeMarkerV2Layer position={homePosition} postcode={postcode} />

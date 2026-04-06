@@ -7,10 +7,8 @@ import * as turf from "@turf/turf";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
 
-/** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). */
+/** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). Desktop only. */
 const MIN_CATCHMENT_FIT_ZOOM = 11;
-/** Extra bottom padding (px, from bottom edge) on phone so fit isn’t hidden behind the card deck */
-const PHONE_FIT_BOUNDS_EXTRA_BOTTOM = 230;
 
 function radiusToMeters(radius, unit) {
   const r = Number(radius);
@@ -125,22 +123,26 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
 
     pendingPanRef.current = null;
 
-    const bottomPad = isPhone ? 60 + PHONE_FIT_BOUNDS_EXTRA_BOTTOM : 60;
-
-    map.fitBounds(bounds, {
+    const fitOpts = {
       paddingTopLeft: [60, 60],
-      paddingBottomRight: [60, bottomPad],
+      paddingBottomRight: [60, 60],
       animate: true,
       maxZoom: 16,
-    });
+    };
 
-    const clampTooWide = () => {
+    map.fitBounds(bounds, fitOpts);
+
+    /* Mobile: single animated fitBounds only — no follow-up pan. */
+    if (isPhone) {
+      return undefined;
+    }
+
+    const t = window.setTimeout(() => {
       const z = map.getZoom();
       if (z < MIN_CATCHMENT_FIT_ZOOM) {
         map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
       }
-    };
-    const t = window.setTimeout(clampTooWide, 500);
+    }, 500);
     return () => clearTimeout(t);
   }, [selectedIds, catchmentsBySchoolId, map, isPhone]);
 

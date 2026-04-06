@@ -40,31 +40,33 @@ export default function TopBar({
             handleSubmit?.(postcode);
           }}
         >
-          <input
-            className={`v2-postcode ${isDefault ? "v2-postcode--default" : ""}`}
-            value={postcode}
-            placeholder="e.g. SM5 4NZ"
-            enterKeyHint="go"
-            onChange={(e) => handleChange?.(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit?.(postcode);
-              }
-            }}
-            style={{
-              backgroundImage: 'url("/icons/home_Board_opaque.png")',
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "14px center",
-              backgroundSize: "16px 16px",
-              paddingLeft: 40,
-            }}
-          />
-          <button type="submit" className="v2-postcode-go" aria-label="Apply postcode">
-            Go
-          </button>
+          <div className="v2-postcode-field">
+            <input
+              className={`v2-postcode ${isDefault ? "v2-postcode--default" : ""}`}
+              value={postcode}
+              placeholder="e.g. SM5 4NZ"
+              enterKeyHint="go"
+              onChange={(e) => handleChange?.(e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSubmit?.(postcode);
+                }
+              }}
+              style={{
+                backgroundImage: 'url("/icons/home_Board_opaque.png")',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "14px center",
+                backgroundSize: "16px 16px",
+                paddingLeft: 40,
+              }}
+            />
+            <button type="submit" className="v2-postcode-go" aria-label="Apply postcode">
+              Go
+            </button>
+          </div>
         </form>
 
         {error ? (
