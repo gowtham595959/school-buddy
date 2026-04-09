@@ -6,12 +6,13 @@ import L from "leaflet";
 import * as turf from "@turf/turf";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
+import { fitBoundsUsingContainerRect } from "./measuredFitBounds";
 
 /** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). Desktop only. */
 const MIN_CATCHMENT_FIT_ZOOM = 11;
 
 /** Bottom inset for Leaflet fitBounds on phone — must clear bottom school cards (see --v2-mobile-deck-clearance). */
-function mobileFitBoundsBottomPaddingPx() {
+export function mobileFitBoundsBottomPaddingPx() {
   if (typeof window === "undefined") return 280;
   const raw = getComputedStyle(document.documentElement)
     .getPropertyValue("--v2-mobile-deck-clearance")
@@ -149,63 +150,78 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
           maxZoom: 16,
         };
 
-    map.fitBounds(bounds, fitOpts);
+    if (isPhone) {
+      /*
+       * Phone: compute zoom from the map container’s laid-out box (getBoundingClientRect), not only
+       * Leaflet’s cached getSize(), and refit when that box changes (ResizeObserver / late layout).
+       * No global browser zoom nudges — same formula for every school.
+       */
+      const applyMeasured = (animate) => {
+        map.invalidateSize({ animate: false });
+        fitBoundsUsingContainerRect(map, bounds, { ...fitOpts, animate });
+      };
 
-    /* Desktop: floor zoom for huge polygons. */
-    if (!isPhone) {
-      const t = window.setTimeout(() => {
-        const z = map.getZoom();
-        if (z < MIN_CATCHMENT_FIT_ZOOM) {
-          map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
-        }
-      }, 500);
-      return () => clearTimeout(t);
+      applyMeasured(!!fitOpts.animate);
+
+      let alive = true;
+      let refitCount = 0;
+      const MAX_EXTRA_REFITS = 8;
+      const silentRefit = () => {
+        if (!alive || refitCount >= MAX_EXTRA_REFITS) return;
+        refitCount += 1;
+        applyMeasured(false);
+      };
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (alive) silentRefit();
+        });
+      });
+
+      const t1 = window.setTimeout(() => alive && silentRefit(), 240);
+      const t2 = window.setTimeout(() => alive && silentRefit(), 520);
+
+      let roTimer;
+      const el = map.getContainer?.();
+      const ro =
+        typeof ResizeObserver !== "undefined" && el
+          ? new ResizeObserver(() => {
+              if (!alive) return;
+              window.clearTimeout(roTimer);
+              roTimer = window.setTimeout(() => silentRefit(), 90);
+            })
+          : null;
+      ro?.observe(el);
+
+      let vvTimer;
+      const vv = typeof window !== "undefined" ? window.visualViewport : null;
+      const onVv = () => {
+        if (!alive) return;
+        window.clearTimeout(vvTimer);
+        vvTimer = window.setTimeout(() => silentRefit(), 90);
+      };
+      vv?.addEventListener?.("resize", onVv);
+
+      return () => {
+        alive = false;
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+        window.clearTimeout(roTimer);
+        window.clearTimeout(vvTimer);
+        ro?.disconnect();
+        vv?.removeEventListener?.("resize", onVv);
+      };
     }
 
-    /*
-     * Mobile (esp. iOS Safari): first fitBounds often uses a stale map size before the URL bar /
-     * visual viewport settles, so zoom can sit one level too low vs Chrome-on-iOS. Re-fit after layout
-     * and on visualViewport resize (same padding for all schools — no per-school table).
-     */
-    let alive = true;
-    const refitOpts = { ...fitOpts, animate: false };
-    const refit = () => {
-      if (!alive || !map || !bounds?.isValid?.()) return;
-      map.invalidateSize({ animate: false });
-      map.fitBounds(bounds, refitOpts);
-    };
+    map.fitBounds(bounds, fitOpts);
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (alive) refit();
-      });
-    });
-
-    const timers = [
-      window.setTimeout(() => alive && refit(), 200),
-      window.setTimeout(() => alive && refit(), 480),
-    ];
-
-    let vvDebounce;
-    let vvNudge = 0;
-    const onVvResize = () => {
-      if (!alive || vvNudge >= 8) return;
-      window.clearTimeout(vvDebounce);
-      vvDebounce = window.setTimeout(() => {
-        vvNudge += 1;
-        refit();
-      }, 140);
-    };
-
-    const vv = typeof window !== "undefined" ? window.visualViewport : null;
-    vv?.addEventListener?.("resize", onVvResize);
-
-    return () => {
-      alive = false;
-      timers.forEach((id) => window.clearTimeout(id));
-      window.clearTimeout(vvDebounce);
-      vv?.removeEventListener?.("resize", onVvResize);
-    };
+    const t = window.setTimeout(() => {
+      const z = map.getZoom();
+      if (z < MIN_CATCHMENT_FIT_ZOOM) {
+        map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
+      }
+    }, 500);
+    return () => clearTimeout(t);
   }, [selectedIds, catchmentsBySchoolId, map, isPhone]);
 
   return null;
