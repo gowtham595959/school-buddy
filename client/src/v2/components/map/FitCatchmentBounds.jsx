@@ -151,18 +151,61 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
 
     map.fitBounds(bounds, fitOpts);
 
-    /* Mobile: single animated fitBounds only — no zoom clamp (desktop only). */
-    if (isPhone) {
-      return undefined;
+    /* Desktop: floor zoom for huge polygons. */
+    if (!isPhone) {
+      const t = window.setTimeout(() => {
+        const z = map.getZoom();
+        if (z < MIN_CATCHMENT_FIT_ZOOM) {
+          map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
+        }
+      }, 500);
+      return () => clearTimeout(t);
     }
 
-    const t = window.setTimeout(() => {
-      const z = map.getZoom();
-      if (z < MIN_CATCHMENT_FIT_ZOOM) {
-        map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
-      }
-    }, 500);
-    return () => clearTimeout(t);
+    /*
+     * Mobile (esp. iOS Safari): first fitBounds often uses a stale map size before the URL bar /
+     * visual viewport settles, so zoom can sit one level too low vs Chrome-on-iOS. Re-fit after layout
+     * and on visualViewport resize (same padding for all schools — no per-school table).
+     */
+    let alive = true;
+    const refitOpts = { ...fitOpts, animate: false };
+    const refit = () => {
+      if (!alive || !map || !bounds?.isValid?.()) return;
+      map.invalidateSize({ animate: false });
+      map.fitBounds(bounds, refitOpts);
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (alive) refit();
+      });
+    });
+
+    const timers = [
+      window.setTimeout(() => alive && refit(), 200),
+      window.setTimeout(() => alive && refit(), 480),
+    ];
+
+    let vvDebounce;
+    let vvNudge = 0;
+    const onVvResize = () => {
+      if (!alive || vvNudge >= 8) return;
+      window.clearTimeout(vvDebounce);
+      vvDebounce = window.setTimeout(() => {
+        vvNudge += 1;
+        refit();
+      }, 140);
+    };
+
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    vv?.addEventListener?.("resize", onVvResize);
+
+    return () => {
+      alive = false;
+      timers.forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(vvDebounce);
+      vv?.removeEventListener?.("resize", onVvResize);
+    };
   }, [selectedIds, catchmentsBySchoolId, map, isPhone]);
 
   return null;
