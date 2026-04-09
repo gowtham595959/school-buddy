@@ -381,8 +381,10 @@ html, body, #root {
     width: 100% !important;
     max-width: none !important;
     flex: none !important;
-    min-height: min(52vh, 420px) !important;
-    max-height: min(88vh, 900px) !important;
+    /* Shorter sheet on iOS so title + close stay visible when opening from list; more map above */
+    min-height: min(48vh, 360px) !important;
+    max-height: min(76vh, 900px) !important;
+    max-height: min(76vh, min(100dvh - 4.5rem, 900px)) !important;
     height: auto !important;
     align-self: stretch !important;
     z-index: 1280;
