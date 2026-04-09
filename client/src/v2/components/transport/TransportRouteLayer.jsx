@@ -102,7 +102,7 @@ export default function TransportRouteLayer({ route }) {
   }
 
   // Show labels when route is visible; long routes (fitBounds) zoom out to ~8–10
-  const MIN_LABEL_ZOOM = 10;
+  const MIN_LABEL_ZOOM = 9;
 
   const currentZoom =
     typeof zoom === "number" ? Math.round(zoom) : Math.round(map.getZoom());

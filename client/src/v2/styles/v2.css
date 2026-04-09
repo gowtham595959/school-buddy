@@ -381,10 +381,8 @@ html, body, #root {
     width: 100% !important;
     max-width: none !important;
     flex: none !important;
-    /* Shorter sheet on iOS so title + close stay visible when opening from list; more map above */
-    min-height: min(48vh, 360px) !important;
-    max-height: min(76vh, 900px) !important;
-    max-height: min(76vh, min(100dvh - 4.5rem, 900px)) !important;
+    min-height: min(52vh, 420px) !important;
+    max-height: min(88vh, 900px) !important;
     height: auto !important;
     align-self: stretch !important;
     z-index: 1280;
@@ -406,20 +404,17 @@ html, body, #root {
     min-height: 0;
     overflow: hidden;
     -webkit-overflow-scrolling: touch;
-    /* Stacking context so the header always paints above the scroller (WebKit can paint scroll over header if margins overlap) */
-    isolation: isolate;
   }
 
   .v2-drawer-sidebar--phone .v2-drawer-header {
     flex-shrink: 0;
     position: relative;
-    z-index: 1;
+    z-index: 6;
     margin-bottom: 0;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     border-bottom: 1px solid #eee;
     background: #fafafa;
-    /* Single hairline: border-bottom only (box-shadow read as a second line next to the border) */
-    box-shadow: none;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
   }
 
   .v2-drawer-sidebar--phone .v2-drawer-scroll {
@@ -428,14 +423,11 @@ html, body, #root {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    position: relative;
-    z-index: 0;
-    /* No negative margin — on iOS Safari it could pull the scroll layer over the title row and hide the close control */
   }
 
   /* Manual scroll-into-view uses small margin; header is no longer in scroll path */
   .v2-drawer-sidebar--phone .v2-drawer-section {
-    scroll-margin-top: 9px;
+    scroll-margin-top: 12px;
   }
 
   /* Legend sits above the card deck */
