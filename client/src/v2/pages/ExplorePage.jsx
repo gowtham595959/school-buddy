@@ -9,6 +9,7 @@ import MapCanvas from "../components/map/MapCanvas";
 import SchoolMarkersV2Layer from "../components/map/SchoolMarkersV2Layer";
 import LegendControl from "../components/map/LegendControl";
 import MapZoomIndicator from "../components/map/MapZoomIndicator";
+import PhoneMapViewportClamp from "../components/map/PhoneMapViewportClamp";
 import SelectedCatchmentsLayers from "../components/map/SelectedCatchmentsLayers";
 import FitCatchmentBounds from "../components/map/FitCatchmentBounds";
 import SchoolDetailDrawer from "../components/drawer/SchoolDetailDrawer";
@@ -251,6 +252,7 @@ export default function ExplorePage() {
 
         <div className="v2-map-wrap" style={MAP_WRAP_STYLE}>
           <MapCanvas center={homePosition} zoom={12}>
+            {isPhoneLayout ? <PhoneMapViewportClamp /> : null}
             <PanToHomeV2 position={homePosition} />
 
             <HomeMarkerV2Layer position={homePosition} postcode={postcode} />
