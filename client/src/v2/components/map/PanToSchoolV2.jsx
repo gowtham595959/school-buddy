@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-leaflet";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { getBoundsFromPayload } from "./FitCatchmentBounds";
-import { nudgeMapAfterProgrammaticMove } from "./phoneMapOpticalNudge";
 
 const SCHOOL_FOCUS_ZOOM = 13;
 
@@ -16,9 +14,11 @@ function schoolWithCoords(s) {
 
 /**
  * Pans only when exactly one school is selected and there is no catchment geometry to fit.
- * Skips flyTo when the user only **removed** other school(s) (e.g. unchecked Tiffin and left Wilson’s
- * alone) so the map does not snap back to Wilson’s on every uncheck. Still flies when the sole school
- * is newly selected from empty or when multiple schools were never in play (scenario 1).
+ * Skips flyTo when the user only **removed** other school(s) (e.g. unchecked Tiffin and left Wilson's
+ * alone) so the map does not snap back to Wilson's on every uncheck.
+ *
+ * Phone: PhoneMapViewportClamp patches getSize() so flyTo automatically centers
+ * in the visible strip — no post-move nudge needed.
  */
 export default function PanToSchoolV2({
   schools,
@@ -27,7 +27,6 @@ export default function PanToSchoolV2({
   pauseForTransport = false,
 }) {
   const map = useMap();
-  const isPhone = useMediaQuery("(max-width: 767px)");
   const lastFlyKeyRef = useRef("");
   const prevSelectedIdsRef = useRef([]);
 
@@ -76,11 +75,8 @@ export default function PanToSchoolV2({
     if (lastFlyKeyRef.current === flyKey) return;
     lastFlyKeyRef.current = flyKey;
 
-    if (isPhone) {
-      map.once("moveend", () => nudgeMapAfterProgrammaticMove(map));
-    }
     map.flyTo([lat, lon], SCHOOL_FOCUS_ZOOM, { duration: 0.55 });
-  }, [map, pauseForTransport, id, lat, lon, payloadForSchool, selectedIds, isPhone]);
+  }, [map, pauseForTransport, id, lat, lon, payloadForSchool, selectedIds]);
 
   return null;
 }

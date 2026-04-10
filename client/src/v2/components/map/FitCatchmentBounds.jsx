@@ -6,21 +6,9 @@ import L from "leaflet";
 import * as turf from "@turf/turf";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { filterDefinitionsToLatestYear } from "../../utils/catchmentYearUtils";
-import { fitBoundsUsingContainerRect } from "./measuredFitBounds";
 
 /** Keep map readable when a school has a very large catchment polygon (e.g. zoom-out extremes). Desktop only. */
 const MIN_CATCHMENT_FIT_ZOOM = 11;
-
-/** Bottom inset for Leaflet fitBounds on phone — must clear bottom school cards (see --v2-mobile-deck-clearance). */
-export function mobileFitBoundsBottomPaddingPx() {
-  if (typeof window === "undefined") return 280;
-  const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue("--v2-mobile-deck-clearance")
-    .trim();
-  const n = parseFloat(raw);
-  const deck = Number.isFinite(n) ? n : 240;
-  return Math.round(deck + 32);
-}
 
 function radiusToMeters(radius, unit) {
   const r = Number(radius);
@@ -86,6 +74,9 @@ export function getBoundsFromPayload(payload) {
 /**
  * Pans the map to fit the catchment area when a catchment checkbox is selected.
  * Only pans on select (add), not on deselect.
+ *
+ * Phone: PhoneMapViewportClamp patches getSize() so Leaflet frames within the visible strip.
+ * No per-call padding hacks needed — simple symmetric padding works.
  */
 export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }) {
   const map = useMap();
@@ -135,93 +126,25 @@ export default function FitCatchmentBounds({ selectedIds, catchmentsBySchoolId }
 
     pendingPanRef.current = null;
 
-    const fitOpts = isPhone
-      ? {
-          /* Reserve space for top bar + bottom card deck so catchments stay in the visible map strip */
-          paddingTopLeft: [16, 68],
-          paddingBottomRight: [16, mobileFitBoundsBottomPaddingPx()],
-          animate: true,
-          maxZoom: 16,
-        }
-      : {
-          paddingTopLeft: [60, 60],
-          paddingBottomRight: [60, 60],
-          animate: true,
-          maxZoom: 16,
-        };
-
-    if (isPhone) {
-      /*
-       * Phone: compute zoom from the map container’s laid-out box (getBoundingClientRect), not only
-       * Leaflet’s cached getSize(), and refit when that box changes (ResizeObserver / late layout).
-       * No global browser zoom nudges — same formula for every school.
-       */
-      const applyMeasured = (animate) => {
-        map.invalidateSize({ animate: false });
-        fitBoundsUsingContainerRect(map, bounds, { ...fitOpts, animate });
-      };
-
-      applyMeasured(!!fitOpts.animate);
-
-      let alive = true;
-      let refitCount = 0;
-      const MAX_EXTRA_REFITS = 8;
-      const silentRefit = () => {
-        if (!alive || refitCount >= MAX_EXTRA_REFITS) return;
-        refitCount += 1;
-        applyMeasured(false);
-      };
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (alive) silentRefit();
-        });
-      });
-
-      const t1 = window.setTimeout(() => alive && silentRefit(), 240);
-      const t2 = window.setTimeout(() => alive && silentRefit(), 520);
-
-      let roTimer;
-      const el = map.getContainer?.();
-      const ro =
-        typeof ResizeObserver !== "undefined" && el
-          ? new ResizeObserver(() => {
-              if (!alive) return;
-              window.clearTimeout(roTimer);
-              roTimer = window.setTimeout(() => silentRefit(), 90);
-            })
-          : null;
-      ro?.observe(el);
-
-      let vvTimer;
-      const vv = typeof window !== "undefined" ? window.visualViewport : null;
-      const onVv = () => {
-        if (!alive) return;
-        window.clearTimeout(vvTimer);
-        vvTimer = window.setTimeout(() => silentRefit(), 90);
-      };
-      vv?.addEventListener?.("resize", onVv);
-
-      return () => {
-        alive = false;
-        window.clearTimeout(t1);
-        window.clearTimeout(t2);
-        window.clearTimeout(roTimer);
-        window.clearTimeout(vvTimer);
-        ro?.disconnect();
-        vv?.removeEventListener?.("resize", onVv);
-      };
-    }
+    const fitOpts = {
+      padding: isPhone ? [20, 20] : [60, 60],
+      animate: true,
+      maxZoom: 16,
+    };
 
     map.fitBounds(bounds, fitOpts);
 
-    const t = window.setTimeout(() => {
-      const z = map.getZoom();
-      if (z < MIN_CATCHMENT_FIT_ZOOM) {
-        map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
-      }
-    }, 500);
-    return () => clearTimeout(t);
+    if (!isPhone) {
+      const t = window.setTimeout(() => {
+        const z = map.getZoom();
+        if (z < MIN_CATCHMENT_FIT_ZOOM) {
+          map.setZoom(MIN_CATCHMENT_FIT_ZOOM, { animate: true });
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+
+    return undefined;
   }, [selectedIds, catchmentsBySchoolId, map, isPhone]);
 
   return null;
