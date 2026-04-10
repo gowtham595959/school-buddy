@@ -1,24 +1,16 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { getBoundsFromPayload } from "./FitCatchmentBounds";
 
 const SCHOOL_FOCUS_ZOOM = 13;
 
-function schoolWithCoords(s) {
-  if (!s || s.id == null) return null;
-  const lat = Number(s.lat);
-  const lon = Number(s.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  return s;
-}
-
 /**
- * Pans only when exactly one school is selected and there is no catchment geometry to fit.
- * Skips flyTo when the user only **removed** other school(s) (e.g. unchecked Tiffin and left Wilson's
- * alone) so the map does not snap back to Wilson's on every uncheck.
+ * Pans the map to the most recently added school when that school has no
+ * catchment geometry to fit (open-catchment schools like Wilson's).
  *
- * Phone: PhoneMapViewportClamp patches getSize() so flyTo automatically centers
- * in the visible strip — no post-move nudge needed.
+ * Works regardless of how many schools are currently selected.
+ * Skips flyTo when the user only *removed* schools (deselect shouldn't snap
+ * the map to a remaining school).
  */
 export default function PanToSchoolV2({
   schools,
@@ -27,56 +19,36 @@ export default function PanToSchoolV2({
   pauseForTransport = false,
 }) {
   const map = useMap();
-  const lastFlyKeyRef = useRef("");
   const prevSelectedIdsRef = useRef([]);
 
-  const target = useMemo(() => {
-    if (!Array.isArray(selectedIds) || selectedIds.length !== 1) return null;
-    const sid = selectedIds[0];
-    return schoolWithCoords(schools.find((x) => x.id === sid));
-  }, [selectedIds, schools]);
-
-  const id = target?.id;
-  const lat = target != null ? Number(target.lat) : NaN;
-  const lon = target != null ? Number(target.lon) : NaN;
-
-  const payloadForSchool = id != null ? catchmentsBySchoolId?.[id] : undefined;
-
   useEffect(() => {
-    const selected = Array.isArray(selectedIds) ? [...selectedIds] : [];
+    const selected = Array.isArray(selectedIds) ? selectedIds : [];
     const prev = prevSelectedIdsRef.current;
+    prevSelectedIdsRef.current = [...selected];
 
-    const skipFlyOnlyRemovedOthers =
-      selected.length === 1 &&
-      prev.length > 1 &&
-      prev.includes(selected[0]);
+    if (pauseForTransport || !map) return;
 
-    prevSelectedIdsRef.current = selected;
+    const newlyAdded = selected.filter((id) => !prev.includes(id));
+    if (newlyAdded.length === 0) return;
 
-    if (pauseForTransport) return;
-    if (!map || id == null) return;
+    const targetId = newlyAdded[newlyAdded.length - 1];
+    const school = schools.find((s) => s.id === targetId);
+    if (!school) return;
+
+    const lat = Number(school.lat);
+    const lon = Number(school.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
-    if (payloadForSchool == null) return;
+    const payload = catchmentsBySchoolId?.[targetId];
+    if (payload == null) return;
 
-    if (payloadForSchool.definitions?.length) {
-      const bounds = getBoundsFromPayload(payloadForSchool);
+    if (payload.definitions?.length) {
+      const bounds = getBoundsFromPayload(payload);
       if (bounds) return;
     }
 
-    const defCount = payloadForSchool.definitions?.length ?? 0;
-    const flyKey = `${id}|d${defCount}`;
-
-    if (skipFlyOnlyRemovedOthers) {
-      lastFlyKeyRef.current = flyKey;
-      return;
-    }
-
-    if (lastFlyKeyRef.current === flyKey) return;
-    lastFlyKeyRef.current = flyKey;
-
     map.flyTo([lat, lon], SCHOOL_FOCUS_ZOOM, { duration: 0.55 });
-  }, [map, pauseForTransport, id, lat, lon, payloadForSchool, selectedIds]);
+  }, [map, pauseForTransport, schools, selectedIds, catchmentsBySchoolId]);
 
   return null;
 }

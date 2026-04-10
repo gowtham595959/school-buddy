@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef } from "react";
 import SchoolListSection from "../sidebar/SchoolListSection";
 
 /** ~2 school rows visible; list scrolls for the rest. */
-const MOBILE_CARD_LIST_SCROLL_PX = 168;
+const MOBILE_CARD_LIST_SCROLL_PX = 134;
 
 function bucketIndexForSchool(id, topItems, middleItems, bottomItems) {
   if (id == null) return null;
