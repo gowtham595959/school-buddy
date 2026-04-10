@@ -17,7 +17,7 @@ html, body, #root {
   --v2-left-panel-width: 413px;   /* matches current ExplorePage sidebar width */
   --v2-right-drawer-width: 480px; /* placeholder for upcoming right drawer */
   /* Phone: room for bottom school cards + safe area (map padding / legend offset) */
-  --v2-mobile-deck-clearance: 240px;
+  --v2-mobile-deck-clearance: 192px;
 }
 
 .v2-shell {
@@ -381,8 +381,9 @@ html, body, #root {
     width: 100% !important;
     max-width: none !important;
     flex: none !important;
-    min-height: min(52vh, 420px) !important;
-    max-height: min(88vh, 900px) !important;
+    min-height: min(46svh, 46vh, 380px) !important;
+    /* Never taller than viewport minus the app header (56px) + breathing room */
+    max-height: min(80svh, 80vh, calc(100dvh - 60px), 820px) !important;
     height: auto !important;
     align-self: stretch !important;
     z-index: 1280;
@@ -408,13 +409,31 @@ html, body, #root {
 
   .v2-drawer-sidebar--phone .v2-drawer-header {
     flex-shrink: 0;
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 6;
     margin-bottom: 0;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #eee;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid #e5e7eb;
     background: #fafafa;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+
+  /* Prominent close button on mobile drawer */
+  .v2-drawer-sidebar--phone .v2-drawer-header .v2-icon-btn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .v2-drawer-sidebar--phone .v2-drawer-scroll {
